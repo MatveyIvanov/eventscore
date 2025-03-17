@@ -1,0 +1,198 @@
+[project]
+name = "eventscore"
+version = "0.1.0"
+authors = [
+  { name="Matvey Ivanov", email="cool.matvey250301@gmail.com" },
+]
+description = "Power up your application with event-driven design!"
+readme = "README.md"
+requires-python = ">=3.11"
+classifiers = [
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Operating System :: OS Independent",
+    "License :: OSI Approved :: MIT License",
+]
+license = "MIT"
+license-files = ["LICEN[CS]E*"]
+
+[project.urls]
+Homepage = "https://github.com/MatveyIvanov/eventscore"
+Issues = "https://github.com/MatveyIvanov/eventscore/issues"
+
+[tool.poetry]
+name = "eventscore"
+version = "0.1.0"
+description = "Power up your application with event-driven design!"
+authors = ["MatveyIvanov <cool.matvey250301@gmail.com>"]
+license = "MIT"
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.11"
+
+[tool.poetry.group.dev.dependencies]
+pytest = "8.2.1"
+pytest-cov = "5.0.0"
+pytest-mock = "3.14.0"
+pytest-asyncio = "0.23.5"
+flake8 = "7.1.0"
+mypy = "1.10.0"
+black = "24.4.2"
+pre-commit = "3.7.1"
+isort = "5.13.2"
+sphinx = "8.2.3"
+tox = "4.24.2"
+
+[tool.pytest.ini_options]
+pythonpath = [
+  "."
+]
+python_files = "test_*.py"
+filterwarnings = [
+    "ignore::RuntimeWarning"
+]
+markers = [
+    "unit: marks tests as unit-tests (deselect with '-m \"not unit\"')",
+    "integration: marks tests as integration-tests (deselect with '-m \"not integration\"')",
+]
+addopts = [
+    "-v",
+    "-rfxP",
+    "--cov",
+    "--log-level=CRITICAL",
+]
+
+[tool.coverage.run]
+relative_files = true
+
+[tool.coverage.report]
+show_missing = true
+exclude_also = [
+    # Don't complain about missing debug-only code:
+    "def __repr__",
+    "if self\\.debug",
+
+    # Don't complain if tests don't hit defensive assertion code:
+    "raise AssertionError",
+    "raise NotImplementedError",
+
+    # Don't complain if non-runnable code isn't run:
+    "if 0:",
+    "if __name__ == .__main__.:",
+
+    # Don't complain about abstract methods, they aren't run:
+    "@(abc\\.)?abstractmethod",
+]
+omit = [
+    "*conftest.py",
+    "*abstract.py",
+    "*__init__*",
+    "*tests*",
+    "*.tox*",
+]
+
+[tool.black]
+exclude = '''
+    .tox*
+'''
+
+[tool.isort]
+profile = "black"
+skip_glob = [
+    ".tox*"
+]
+
+[tool.mypy]
+python_version = 3.11
+exclude = [
+    "tests",
+    "tests\\.py",
+]
+ignore_missing_imports = false
+plugins = [
+
+]
+
+[tool.tox]
+requires = ["tox>=4.24.2"]
+env_list = [
+    "3.13",
+    "3.12",
+    "3.11",
+    "flake8",
+    "black",
+    "isort",
+    "mypy",
+    "coveralls",
+]
+
+[tool.tox.env_run_base]
+description = "Run test under {base_python}"
+deps = [
+    "pytest==8.2.1",
+    "pytest-cov==5.0.0",
+    "pytest-mock==3.14.0",
+    "pytest-asyncio==0.23.5",
+]
+commands = [["pytest", "tests"]]
+
+[tool.tox.env.flake8]
+description = "Run Flake8 on code base"
+deps = [
+    "flake8==7.1.0",
+]
+commands = [
+    ["flake8", "--config", ".flake8", "."],
+]
+
+[tool.tox.env.black]
+description = "Run Black on code base"
+deps = [
+    "black==24.4.2",
+]
+commands = [
+    ["black", "--config", "pyproject.toml", "--check", "."],
+]
+
+[tool.tox.env.isort]
+description = "Run isort on code base"
+deps = [
+    "isort==5.13.2"
+]
+commands = [
+    ["isort", "--profile", "black", "--filter-files", "--check", "."],
+]
+
+[tool.tox.env.mypy]
+description = "Run mypy on code base"
+deps = [
+    "mypy==1.10.0",
+]
+commands = [["mypy", "eventscore"]]
+
+[tool.tox.env.coveralls]
+passenv = [
+    "GITHUB_*",
+    "COVERALLS_*",
+]
+basepython = [
+    "py312",
+]
+deps = [
+    "{[env_run_base]deps}",
+    "coverage==7.6.12",
+    "coveralls==4.0.1",
+]
+commands = [
+    ["coverage", "erase"],
+    ["pytest", "tests"],
+    ["coverage", "report"],
+    ["python", "-m", "pip", "install", "coveralls==4.0.1"], # ...
+    ["coveralls"],
+]
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

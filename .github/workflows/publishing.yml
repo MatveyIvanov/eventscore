@@ -1,0 +1,56 @@
+name: Publishing
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - "[0-9]+.[0-9]+.[0-9]+"
+
+jobs:
+
+  linters:
+    name: Run linters
+    runs-on: ubuntu-24.04
+    strategy:
+      matrix:
+        toxenv: [ flake8, black, isort, mypy ]
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-python@v4
+        with:
+          python-version: 3.13
+      - run: pip install tox
+      - run: tox
+        env:
+          TOXENV: ${{ matrix.toxenv }}
+
+  tests:
+    name: Run tests
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-python@v4
+        with:
+          python-version: 3.13
+      - run: pip install tox
+      - run: tox
+        env:
+          TOXENV: 3.13
+
+  build-n-publish:
+    runs-on: ubuntu-24.04
+    needs: [tests, linters]
+    steps:
+      - uses: actions/checkout@v3
+      - name: Build and Publish
+        uses: JRubics/poetry-publish@v2.1
+        with:
+          python_version: "3.13"
+          poetry_install_options: "--without dev"
+          # pypi.org
+          pypi_token: ${{ secrets.PYPI_API_TOKEN }}
+          # test.pypi.org
+#          repository_name: "testpypi"
+#          repository_username: "__token__"
+#          repository_password: ${{ secrets.TEST_PYPI_API_TOKEN }}
+#          repository_url: "https://test.pypi.org/legacy/"

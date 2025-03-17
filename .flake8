@@ -1,0 +1,12 @@
+[flake8]
+exclude =
+    .venv
+    .pypy_cache
+    .pytest_cache
+    .coverage
+    .tox
+    docs
+max-line-length = 88
+per-file-ignores =
+    __init__.py:F401
+    *test_*.py:E501,F401
