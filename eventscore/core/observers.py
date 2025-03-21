@@ -1,7 +1,7 @@
 import asyncio
 import threading
 
-from eventscore.core.abstract import IASyncConsumer, IStream, IObserver, IConsumer
+from eventscore.core.abstract import IASyncConsumer, IConsumer, IObserver, IStream
 from eventscore.core.events import TEvent
 
 

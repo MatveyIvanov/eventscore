@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Type, TypeVar, Callable
+from typing import Callable, Type, TypeVar
 
 from eventscore.core.abstract import IECore
 from eventscore.core.events import Event

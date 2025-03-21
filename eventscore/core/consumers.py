@@ -1,4 +1,4 @@
-from typing import Awaitable, Any, Callable
+from typing import Any, Awaitable, Callable
 
 from eventscore.core.abstract import IASyncConsumer, IConsumer
 from eventscore.core.events import Event

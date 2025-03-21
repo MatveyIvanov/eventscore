@@ -3,14 +3,14 @@ from typing import Dict, Tuple
 
 from eventscore.core.abstract import (
     IECore,
-    TFunc,
-    TEvent,
-    TConsumerGroup,
     IProcessPipeline,
     ISpawnWorker,
+    TConsumerGroup,
+    TEvent,
+    TFunc,
 )
 from eventscore.core.pipelines import Pipeline, PipelineItem, ProcessPipeline
-from eventscore.core.workers import Worker, SpawnMPWorker
+from eventscore.core.workers import SpawnMPWorker, Worker
 from eventscore.decorators import consumer as _consumer
 
 

@@ -2,16 +2,16 @@ from __future__ import annotations
 
 import uuid
 from dataclasses import dataclass, field
-from typing import Set, List, Type
+from typing import List, Set, Type
 
 from eventscore.core.abstract import (
-    TFunc,
-    TEvent,
-    TConsumerGroup,
-    IProcessPipeline,
-    IObserver,
     IConsumer,
+    IObserver,
+    IProcessPipeline,
     IStream,
+    TConsumerGroup,
+    TEvent,
+    TFunc,
 )
 from eventscore.core.exceptions import EventsCoreError
 from eventscore.core.workers import Worker

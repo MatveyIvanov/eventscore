@@ -1,6 +1,6 @@
 import uuid
 from dataclasses import dataclass
-from typing import TypeVar, Mapping, Any
+from typing import Any, Mapping, TypeVar
 
 TEvent = TypeVar("TEvent", bound=str)
 

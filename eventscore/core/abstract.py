@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Protocol, Callable, TypeVar
+from typing import Callable, Protocol, TypeVar
 
 from eventscore.core.events import Event, TEvent
 from eventscore.core.pipelines import Pipeline
