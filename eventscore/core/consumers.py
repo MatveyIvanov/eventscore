@@ -1,19 +1,9 @@
-from typing import Any, Awaitable, Callable
-
-from eventscore.core.abstract import IASyncConsumer, IConsumer
-from eventscore.core.events import Event
-
-
-class AsyncConsumer(IASyncConsumer):
-    def __init__(self, func: Callable[[Event], Awaitable[Any]]) -> None:
-        self.__func = func
-
-    async def consume(self, event: Event) -> None:
-        await self.__func(event)
+from eventscore.core.abstract import ConsumerFunc, IConsumer
+from eventscore.core.types import Event
 
 
 class Consumer(IConsumer):
-    def __init__(self, func: Callable[[Event], Any]) -> None:
+    def __init__(self, func: ConsumerFunc) -> None:
         self.__func = func
 
     def consume(self, event: Event) -> None:

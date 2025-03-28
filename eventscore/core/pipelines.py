@@ -1,81 +1,68 @@
 from __future__ import annotations
 
-import uuid
-from dataclasses import dataclass, field
 from typing import List, Set, Type
 
 from eventscore.core.abstract import (
+    EventType,
     IConsumer,
-    IObserver,
+    IECore,
     IProcessPipeline,
-    IStream,
-    TConsumerGroup,
-    TEvent,
-    TFunc,
+    IRunner,
 )
-from eventscore.core.exceptions import EventsCoreError
+from eventscore.core.consumers import Consumer
+from eventscore.core.exceptions import (
+    ClonesMismatchError,
+    EmptyPipelineError,
+    UnrelatedConsumersError,
+)
+from eventscore.core.runners import ObserverRunner
+from eventscore.core.types import Pipeline, PipelineItem
 from eventscore.core.workers import Worker
-
-
-@dataclass(frozen=True, slots=True)
-class PipelineItem:
-    func: TFunc
-    event: TEvent
-    consumer_group: TConsumerGroup
-    clones: int = 1
-
-    def __eq__(self, other: PipelineItem) -> bool:
-        return (
-            self.func == other.func
-            and self.event == other.event
-            and self.consumer_group == other.consumer_group
-        )
-
-
-@dataclass(frozen=True, slots=True)
-class Pipeline:
-    uid: uuid.UUID = field(default_factory=uuid.uuid4)
-    items: Set[PipelineItem] = field(default_factory=set)
 
 
 class ProcessPipeline(IProcessPipeline):
     def __init__(
         self,
         consumer_type: Type[IConsumer] = Consumer,
-        observer_type: Type[IObserver] = Observer,
+        runner_type: Type[IRunner] = ObserverRunner,
     ) -> None:
         self.__consumer_type = consumer_type
-        self.__observer_type = observer_type
+        self.__runner_type = runner_type
 
-    def __call__(self, pipeline: Pipeline, stream: IStream) -> Worker:
+    def __call__(self, pipeline: Pipeline, ecore: IECore) -> Worker:
         self.__validate_pipeline(pipeline)
+        event = self.__get_event(pipeline.items)
         consumers = self.__make_consumers(pipeline.items)
-        observer = self.__make_observer(consumers, stream)
+        runner = self.__make_runner(consumers, ecore, event)
         return Worker(
             uid=pipeline.uid,
             name=str(pipeline.uid),
             clones=pipeline.items.pop().clones,
-            observer=observer,
+            runner=runner,
         )
 
     def __validate_pipeline(self, pipeline: Pipeline) -> None:
         if len(pipeline.items) == 0:
-            raise EventsCoreError("Pipeline must have at least one item")
+            raise EmptyPipelineError
         if len(set(item.clones for item in pipeline.items)) > 1:
-            raise EventsCoreError(
-                "Pipeline must have the same number of clones for all items"
-            )
+            raise ClonesMismatchError
+        if (len(set(item.event for item in pipeline.items))) > 1:
+            raise UnrelatedConsumersError
+
+    def __get_event(self, items: Set[PipelineItem]) -> EventType:
+        return next(iter(items)).event
 
     def __make_consumers(self, items: Set[PipelineItem]) -> List[IConsumer]:
         result = []
         for item in items:
-            result.append(self.__consumer_type(item.func, item.event))
+            result.append(self.__consumer_type(item.func))
 
         return result
 
-    def __make_observer(self, consumers: List[IConsumer], stream: IStream) -> IObserver:
-        return self.__observer_type(
-            stream=stream,
-            serializer=serializer,
-            *consumers,
-        )
+    def __make_runner(
+        self,
+        consumers: List[IConsumer],
+        ecore: IECore,
+        event: EventType,
+    ) -> IRunner:
+        return self.__runner_type(ecore.stream, event, *consumers)

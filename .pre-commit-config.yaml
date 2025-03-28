@@ -1,19 +1,25 @@
 repos:
-- repo: https://github.com/PyCQA/flake8
-  rev: 7.1.0
-  hooks:
-  - id: flake8
-    args: ["--config", ".flake8"]
-    stages: [commit]
-- repo: https://github.com/psf/black
-  rev: 24.4.2
-  hooks:
-  - id: black
-    args: ["--config", "pyproject.toml"]
-    stages: [commit]
-- repo: https://github.com/pycqa/isort
-  rev: 5.13.2
-  hooks:
-  - id: isort
-    args: ["--profile", "black", "--filter-files"]
-    stages: [commit]
+  - repo: https://github.com/PyCQA/flake8
+    rev: 7.1.0
+    hooks:
+      - id: flake8
+        args: [ "--config", ".flake8" ]
+        stages: [ commit ]
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.11.2
+    hooks:
+      - id: ruff
+        args: [ --fix ]
+      - id: ruff-format
+  - repo: https://github.com/psf/black
+    rev: 24.4.2
+    hooks:
+      - id: black
+        args: [ "--config", "pyproject.toml" ]
+        stages: [ commit ]
+  - repo: https://github.com/pycqa/isort
+    rev: 5.13.2
+    hooks:
+      - id: isort
+        args: [ "--profile", "black", "--filter-files" ]
+        stages: [ commit ]

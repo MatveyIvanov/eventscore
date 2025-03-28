@@ -2,7 +2,7 @@
 name = "eventscore"
 version = "0.1.0"
 authors = [
-  { name="Matvey Ivanov", email="cool.matvey250301@gmail.com" },
+    { name = "Matvey Ivanov", email = "cool.matvey250301@gmail.com" },
 ]
 description = "Power up your application with event-driven design!"
 readme = "README.md"
@@ -31,6 +31,7 @@ readme = "README.md"
 
 [tool.poetry.dependencies]
 python = "^3.11"
+redis = "5.2.1"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "8.2.1"
@@ -44,10 +45,21 @@ pre-commit = "3.7.1"
 isort = "5.13.2"
 sphinx = "8.2.3"
 tox = "4.24.2"
+ruff = "0.11.2"
+pyright = "1.1.397"
+
+
+[tool.poetry.group.django.dependencies]
+django = "5.1.2"
+djangorestframework = "3.15.2"
+
+
+[tool.poetry.group.fastapi.dependencies]
+fastapi = "0.115.12"
 
 [tool.pytest.ini_options]
 pythonpath = [
-  "."
+    "."
 ]
 python_files = "test_*.py"
 filterwarnings = [
@@ -73,15 +85,12 @@ exclude_also = [
     # Don't complain about missing debug-only code:
     "def __repr__",
     "if self\\.debug",
-
     # Don't complain if tests don't hit defensive assertion code:
     "raise AssertionError",
     "raise NotImplementedError",
-
     # Don't complain if non-runnable code isn't run:
     "if 0:",
     "if __name__ == .__main__.:",
-
     # Don't complain about abstract methods, they aren't run:
     "@(abc\\.)?abstractmethod",
 ]
@@ -104,15 +113,104 @@ skip_glob = [
     ".tox*"
 ]
 
+[tool.ruff]
+# Exclude a variety of commonly ignored directories.
+exclude = [
+    ".bzr",
+    ".direnv",
+    ".eggs",
+    ".git",
+    ".git-rewrite",
+    ".hg",
+    ".ipynb_checkpoints",
+    ".mypy_cache",
+    ".nox",
+    ".pants.d",
+    ".pyenv",
+    ".pytest_cache",
+    ".pytype",
+    ".ruff_cache",
+    ".svn",
+    ".tox",
+    ".venv",
+    ".vscode",
+    "__pypackages__",
+    "_build",
+    "buck-out",
+    "build",
+    "dist",
+    "node_modules",
+    "site-packages",
+    "venv",
+]
+
+# Same as Black.
+line-length = 88
+indent-width = 4
+
+# Assume Python 3.9
+target-version = "py311"
+
+[tool.ruff.lint]
+# Enable Pyflakes (`F`) and a subset of the pycodestyle (`E`)  codes by default.
+select = ["E4", "E7", "E9", "F"]
+ignore = []
+
+# Allow fix for all enabled rules (when `--fix`) is provided.
+fixable = ["ALL"]
+unfixable = []
+
+# Allow unused variables when underscore-prefixed.
+dummy-variable-rgx = "^(_+|(_+[a-zA-Z0-9_]*[a-zA-Z0-9]+?))$"
+
+[tool.ruff.format]
+# Like Black, use double quotes for strings.
+quote-style = "double"
+
+# Like Black, indent with spaces, rather than tabs.
+indent-style = "space"
+
+# Like Black, respect magic trailing commas.
+skip-magic-trailing-comma = false
+
+# Like Black, automatically detect the appropriate line ending.
+line-ending = "auto"
+
 [tool.mypy]
 python_version = 3.11
 exclude = [
     "tests",
     "tests\\.py",
+    "examples",
 ]
 ignore_missing_imports = false
 plugins = [
 
+]
+
+[tool.pyright]
+include = ["eventscore"]
+exclude = [
+    "**/__pycache__",
+    ".tox",
+    "docs",
+    "examples",
+]
+ignore = [
+    ".tox",
+    "docs",
+    "examples",
+]
+defineConstant = { DEBUG = true }
+
+reportMissingImports = "error"
+reportMissingTypeStubs = false
+
+pythonVersion = "3.11"
+pythonPlatform = "Linux"
+
+executionEnvironments = [
+    { root = "." },
 ]
 
 [tool.tox]

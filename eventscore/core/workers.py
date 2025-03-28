@@ -1,17 +1,15 @@
-import uuid
-from dataclasses import dataclass
+import multiprocessing as mp
 
-from eventscore.core.abstract import IObserver, ISpawnWorker
-
-
-@dataclass(frozen=True, slots=True)
-class Worker:
-    uid: uuid.UUID
-    name: str
-    clones: int
-    observer: IObserver
+from eventscore.core.abstract import ISpawnWorker
+from eventscore.core.types import Worker
 
 
 class SpawnMPWorker(ISpawnWorker):
-    def __call__(self, worker: Worker, observer: IObserver) -> None:
-        pass
+    def __call__(self, worker: Worker) -> None:
+        processes = []
+        for _ in range(worker.clones):
+            process = mp.Process(target=worker.runner.run, daemon=True)
+            processes.append(process)
+
+        for process in processes:
+            process.start()

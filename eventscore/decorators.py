@@ -1,38 +1,36 @@
-from __future__ import annotations
+import functools
+from typing import Any
 
-from dataclasses import dataclass
-from typing import Callable, Type, TypeVar
-
-from eventscore.core.abstract import IECore
-from eventscore.core.events import Event
-
-TEvent = TypeVar("TEvent", bound=Event)
-TFunc = TypeVar("TFunc", bound=Callable)
-TConsumerGroup = TypeVar("TConsumerGroup", bound=str)
-
-
-def event(cls: Type[TEvent] | None = None) -> Type[TEvent]:
-    def wrap(cls: Type[TEvent]) -> Type[TEvent]:
-        return dataclass(frozen=True)(cls)
-
-    if cls is None:
-        return wrap  # type:ignore[return-value]
-
-    return wrap(cls)
+from eventscore.core.abstract import ConsumerFunc, ConsumerGroup, EventType, IECore
 
 
 def consumer(
-    func: TFunc | None = None,
+    func: ConsumerFunc | None = None,
     *,
     ecore: IECore,
-    event: TEvent,
-    consumer_group: TConsumerGroup,
+    event: EventType,
+    group: ConsumerGroup,
     clones: int = 1,
-) -> TFunc:
-    def decorator(func: TFunc) -> TFunc:
-        ecore.register_consumer(func, event, consumer_group, clones)
+) -> ConsumerFunc:
+    def decorator(func: ConsumerFunc) -> ConsumerFunc:
+        # ecore.register_consumer(func, event, group, clones)
+        func.__is_consumer__ = True
+        func.__consumer_event__ = event
+        func.__consumer_group__ = group
+        func.__consumer_clones__ = clones
+
+        @functools.wraps(func)
+        def wrapper(*args, **kwargs) -> Any:
+            return func(*args, **kwargs)
+
+        return wrapper
 
     if func is None:
-        return decorator
+        return decorator  # type:ignore[return-value]
 
     return decorator(func)
+
+
+@consumer(ecore=None, event="event", group="group")
+def function(event) -> None:
+    return None

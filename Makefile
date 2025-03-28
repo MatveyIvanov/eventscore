@@ -6,8 +6,10 @@ integrationtest:
 	poetry run pytest . -m integration
 lint:
 	poetry run flake8 .
+	poetry run ruff check
 typecheck:
 	poetry run mypy .
+	poetry run pyright .
 format:
 	poetry run black $(OPTS) .
 formatcheck:
