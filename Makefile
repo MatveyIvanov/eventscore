@@ -26,3 +26,8 @@ docsbuild:
 	cd docs \
 		&& sphinx-apidoc -f -o ../docs/source/ ../eventscore \
 		&& $(MAKE) html
+update-examples:
+	cp -r eventscore examples/django/src/
+django-example:
+	$(MAKE) update-examples
+	docker compose -f examples/django/docker/docker-compose.yml up $(OPTS)

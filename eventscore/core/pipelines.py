@@ -18,6 +18,7 @@ from eventscore.core.exceptions import (
 from eventscore.core.runners import ObserverRunner
 from eventscore.core.types import Pipeline, PipelineItem
 from eventscore.core.workers import Worker
+from eventscore.core.logging import logger
 
 
 class ProcessPipeline(IProcessPipeline):
@@ -28,12 +29,17 @@ class ProcessPipeline(IProcessPipeline):
     ) -> None:
         self.__consumer_type = consumer_type
         self.__runner_type = runner_type
+        self.__logger = logger
 
     def __call__(self, pipeline: Pipeline, ecore: IECore) -> Worker:
         self.__validate_pipeline(pipeline)
+        self.__logger.debug(f"Received valid pipeline {pipeline}.")
         event = self.__get_event(pipeline.items)
+        self.__logger.debug(f"Pipeline has event {event}.")
         consumers = self.__make_consumers(pipeline.items)
+        self.__logger.debug(f"Built consumers: {consumers}")
         runner = self.__make_runner(consumers, ecore, event)
+        self.__logger.debug(f"Built runner: {runner}")
         return Worker(
             uid=pipeline.uid,
             name=str(pipeline.uid),

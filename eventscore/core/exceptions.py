@@ -20,3 +20,7 @@ class UnrelatedConsumersError(EventsCoreError):
 
 class EmptyStreamError(EventsCoreError):
     message = "Stream does not have unprocessed messages."
+
+
+class TooManyDataError(EventsCoreError):
+    message = "Unexpected number of data received for event."

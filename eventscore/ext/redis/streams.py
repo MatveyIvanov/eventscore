@@ -1,12 +1,12 @@
 from collections import defaultdict
-from typing import Any, Dict, Mapping
+from typing import Any, Dict
 
 import redis
-from redis.typing import EncodableT, FieldT
 
 from eventscore.core.abstract import EventType, IEventSerializer, IStream
-from eventscore.core.exceptions import EmptyStreamError
+from eventscore.core.exceptions import EmptyStreamError, TooManyDataError
 from eventscore.core.types import Event
+from eventscore.core.logging import logger
 
 
 class RedisStream(IStream):
@@ -15,8 +15,8 @@ class RedisStream(IStream):
         host: str,
         port: int,
         db: int,
-        serializer: IEventSerializer[bytes, Dict[FieldT, EncodableT]],
-        redis_init_kwargs: Mapping[str, Any] | None = None,
+        serializer: IEventSerializer[bytes, str],
+        redis_init_kwargs: Dict[str, Any] | None = None,
     ) -> None:
         redis_init_kwargs = redis_init_kwargs or {}
         redis_init_kwargs.update(
@@ -29,6 +29,7 @@ class RedisStream(IStream):
         self.__redis = redis.Redis(**redis_init_kwargs)
         self.__serializer = serializer
         self.__event_to_latest_id = defaultdict(lambda: 0)
+        self.__logger = logger
 
     def put(
         self,
@@ -38,10 +39,11 @@ class RedisStream(IStream):
         timeout: int = 5,
     ) -> None:
         self.__redis.xadd(
-            name=event.type,
-            fields=self.__serializer.encode(event),
-            id=str(event.uid),
+            name=str(event.type),
+            fields={"value": self.__serializer.encode(event)},
+            # id=str(event.uid),
         )
+        self.__logger.debug(f"XADDed event {event}.")
 
     def pop(
         self,
@@ -52,12 +54,26 @@ class RedisStream(IStream):
     ) -> Event:
         xresult = self.__redis.xread(
             streams={event: self.__event_to_latest_id[event]},
+            count=1,
             block=timeout * 1000 if block else None,
         )
-        print(xresult, type(xresult))
+        self.__logger.debug(f"XREADed {xresult}.")
         if not xresult:
             raise EmptyStreamError
 
-        id_, bevent = xresult[0]
-        self.__event_to_latest_id[event] = id_
+        item = xresult[0]
+        if not item:
+            raise EmptyStreamError
+
+        name, data = item
+        if not data:
+            raise EmptyStreamError
+        if len(data) > 1:
+            raise TooManyDataError
+
+        uid, payload = data[0]
+        bevent = payload[b"value"]
+
+        self.__logger.debug(f"Got valid event {name} with id {uid}.")
+        self.__event_to_latest_id[event] = uid
         return self.__serializer.decode(bevent)

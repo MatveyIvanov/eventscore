@@ -1,0 +1,67 @@
+networks:
+  network:
+    name: ${PROJECT_NAME}-network
+
+volumes:
+  redis-data:
+    name: ${PROJECT_NAME}-redis-data
+
+services:
+  nginx:
+    container_name: ${PROJECT_NAME}-nginx
+    build:
+      context: ../
+      dockerfile: docker/nginx/Dockerfile
+      args:
+        NGINX_VERSION: ${NGINX_VERSION}
+    ports:
+      - ${NGINX_OUTER_PORT}:${NGINX_INNER_PORT}
+    depends_on:
+      - wsgi
+    networks:
+      - network
+    restart: ${RESTART_POLICY:-unless-stopped}
+    cpus: ${NGINX_CPUS:-0.000}
+    mem_limit: ${NGINX_MEM_LIMIT:-1G}
+    mem_reservation: ${NGINX_MEM_RESERVATION:-500M}
+
+  redis:
+    container_name: ${PROJECT_NAME}-redis
+    image: redis:${REDIS_VERSION}
+    command:
+      - "--requirepass ${REDIS_PASSWORD}"
+    volumes:
+      - redis-data:/data
+    networks:
+      - network
+    restart: ${RESTART_POLICY:-unless-stopped}
+    healthcheck:
+      test: ["CMD", "redis-cli", "--raw", "incr", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    cpus: ${REDIS_CPUS:-0.000}
+    mem_limit: ${REDIS_MEM_LIMIT:-1G}
+    mem_reservation: ${REDIS_MEM_RESERVATION:-500M}
+
+  wsgi:
+    container_name: ${PROJECT_NAME}-wsgi
+    build:
+      context: ../
+      dockerfile: docker/wsgi/Dockerfile
+      target: ${WSGI_TARGET}
+    env_file:
+      - .env
+    volumes:
+      - ../src/:/apps/
+    depends_on:
+      redis:
+        condition: service_healthy
+    expose:
+      - ${WSGI_PORT}
+    networks:
+      - network
+    restart: ${RESTART_POLICY:-unless-stopped}
+    cpus: ${WSGI_CPUS:-0.000}
+    mem_limit: ${WSGI_MEM_LIMIT:-1G}
+    mem_reservation: ${WSGI_MEM_RESERVATION:-500M}

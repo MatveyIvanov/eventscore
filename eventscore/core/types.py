@@ -4,7 +4,7 @@ import uuid
 from dataclasses import dataclass, field
 from enum import IntEnum, StrEnum
 from time import time
-from typing import Any, Callable, Mapping, Set, TypeAlias, Union
+from typing import Any, Callable, Mapping, Set, TypeAlias, TypedDict, Union
 
 # FIXME: Duplicating definitions from abstract for now,
 # FIXME: to evade circular import problem
@@ -25,12 +25,36 @@ class EventStatus(IntEnum):
     FAILED = 2
 
 
+class EventDict(TypedDict):
+    type: str
+    uid: str
+    ts: str
+    payload: Mapping[str, EncodableT]
+
+
 @dataclass(frozen=True, slots=True)
 class Event:
     type: EventType
     uid: uuid.UUID = field(default_factory=uuid.uuid4)
-    created_at: str = field(default_factory=lambda: str(time()))  # unix timestamp
+    ts: str = field(default_factory=lambda: str(time()))  # unix timestamp
     payload: Mapping[str, EncodableT] = field(default_factory=dict)
+
+    def asdict(self) -> EventDict:
+        return {
+            "type": str(self.type),
+            "uid": str(self.uid),
+            "ts": self.ts,
+            "payload": self.payload,
+        }
+
+    @classmethod
+    def fromdict(cls, obj: EventDict) -> Event:
+        return Event(
+            type=obj["type"],
+            uid=uuid.UUID(obj["uid"]),
+            ts=obj["ts"],
+            payload=obj["payload"],
+        )
 
 
 # FIXME: Duplicating definitions from abstract for now,

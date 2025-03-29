@@ -1,9 +1,9 @@
 from django.urls import include, path
 
 v0 = [
-    path("", include("ping.urls", "ping")),
+    path("", include(("ping.urls", "ping"))),
 ]
 
 urlpatterns = [
-    path("v0/", include(v0, "v0")),
+    path("api/v0/", include(v0)),
 ]

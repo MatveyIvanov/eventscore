@@ -3,7 +3,7 @@ from rest_framework.response import Response
 from rest_framework.viewsets import GenericViewSet
 
 from eventscore.core.types import Event
-from examples.django.src.config.ecore import ecore
+from config.ecore import ecore
 
 
 class PingViewSet(GenericViewSet):

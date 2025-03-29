@@ -29,8 +29,3 @@ def consumer(
         return decorator  # type:ignore[return-value]
 
     return decorator(func)
-
-
-@consumer(ecore=None, event="event", group="group")
-def function(event) -> None:
-    return None
