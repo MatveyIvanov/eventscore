@@ -15,10 +15,10 @@ from eventscore.core.exceptions import (
     EmptyPipelineError,
     UnrelatedConsumersError,
 )
+from eventscore.core.logging import logger
 from eventscore.core.runners import ObserverRunner
 from eventscore.core.types import Pipeline, PipelineItem
 from eventscore.core.workers import Worker
-from eventscore.core.logging import logger
 
 
 class ProcessPipeline(IProcessPipeline):

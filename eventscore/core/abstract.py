@@ -9,8 +9,8 @@ EventType: TypeAlias = Union[str, StrEnum, IntEnum]
 ConsumerFunc: TypeAlias = Callable[[Event], Any]
 ConsumerGroup: TypeAlias = Union[str, StrEnum, IntEnum]
 
-IType = TypeVar("IType")
-RType = TypeVar("RType")
+IType = TypeVar("IType", contravariant=True)
+RType = TypeVar("RType", covariant=True)
 
 
 class IECore(Protocol):
@@ -41,7 +41,7 @@ class IECore(Protocol):
         group: ConsumerGroup,
         clones: int = 1,
     ) -> None: ...
-    def discover_consumers(self, *, package: str | None = None) -> None: ...
+    def discover_consumers(self, *, root: str | None = None) -> None: ...
 
     def produce(
         self,
@@ -74,6 +74,8 @@ class IEventSerializer(Protocol[IType, RType]):
 
 class IProducer(Protocol):
     __slots__ = ()
+
+    def __init__(self, ecore: IECore, **kwargs: Any): ...
 
     def produce(
         self,

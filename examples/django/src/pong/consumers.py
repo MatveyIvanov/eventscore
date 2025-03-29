@@ -1,5 +1,6 @@
-from eventscore.core.types import Event
 from config.ecore import ecore
+
+from eventscore.core.types import Event
 
 
 @ecore.consumer(event="ping", group="medium", clones=1)

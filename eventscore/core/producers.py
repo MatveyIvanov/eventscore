@@ -1,6 +1,6 @@
 from eventscore.core.abstract import IECore, IProducer
-from eventscore.core.types import Event
 from eventscore.core.logging import logger
+from eventscore.core.types import Event
 
 
 class Producer(IProducer):

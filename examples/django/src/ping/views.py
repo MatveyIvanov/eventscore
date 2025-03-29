@@ -1,9 +1,9 @@
+from config.ecore import ecore
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.viewsets import GenericViewSet
 
 from eventscore.core.types import Event
-from config.ecore import ecore
 
 
 class PingViewSet(GenericViewSet):

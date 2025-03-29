@@ -13,11 +13,12 @@ def consumer(
     clones: int = 1,
 ) -> ConsumerFunc:
     def decorator(func: ConsumerFunc) -> ConsumerFunc:
-        # ecore.register_consumer(func, event, group, clones)
-        func.__is_consumer__ = True
-        func.__consumer_event__ = event
-        func.__consumer_group__ = group
-        func.__consumer_clones__ = clones
+        ecore.register_consumer(func, event, group, clones)
+
+        setattr(func, "__is_consumer__", True)
+        setattr(func, "__consumer_event__", event)
+        setattr(func, "__consumer_group__", group)
+        setattr(func, "__consumer_clones__", clones)
 
         @functools.wraps(func)
         def wrapper(*args, **kwargs) -> Any:

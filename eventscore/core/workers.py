@@ -1,8 +1,8 @@
 import multiprocessing as mp
 
 from eventscore.core.abstract import ISpawnWorker
-from eventscore.core.types import Worker
 from eventscore.core.logging import logger
+from eventscore.core.types import Worker
 
 
 class SpawnMPWorker(ISpawnWorker):

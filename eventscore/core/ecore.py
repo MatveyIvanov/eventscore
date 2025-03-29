@@ -3,7 +3,7 @@ import inspect
 import os
 from collections import defaultdict
 from pathlib import Path
-from typing import Any, Dict, Iterable, Mapping, Tuple, Type
+from typing import Any, Dict, List, Mapping, Tuple, Type, TypeAlias
 
 from eventscore.core.abstract import (
     ConsumerFunc,
@@ -16,12 +16,16 @@ from eventscore.core.abstract import (
     IStream,
 )
 from eventscore.core.exceptions import AlreadySpawnedError
+from eventscore.core.logging import logger
 from eventscore.core.pipelines import Pipeline, PipelineItem, ProcessPipeline
 from eventscore.core.producers import Producer
 from eventscore.core.types import Event
 from eventscore.core.workers import SpawnMPWorker, Worker
 from eventscore.decorators import consumer as _consumer
-from eventscore.core.logging import logger
+
+FoundConsumerFunctions: TypeAlias = List[
+    Tuple[ConsumerFunc, EventType, ConsumerGroup, int]
+]
 
 
 class ECore(IECore):
@@ -111,7 +115,12 @@ class ECore(IECore):
             )
         )
         self.__logger.info(
-            f"Consumer with func={func.__name__}, event={event}, group={group}, clones={clones} is successfully registered."
+            "Consumer with "
+            f"func={func.__name__}, "
+            f"event={event}, "
+            f"group={group}, "
+            f"clones={clones} "
+            "is successfully registered."
         )
 
     def discover_consumers(self, *, root: str | None = None) -> None:
@@ -125,8 +134,8 @@ class ECore(IECore):
 
         def discover_in_module(
             path: Path,
-        ) -> Iterable[Tuple[ConsumerFunc, EventType, ConsumerGroup, int]]:
-            result = []
+        ) -> FoundConsumerFunctions:
+            result: FoundConsumerFunctions = []
             self.__logger.debug(f"Discover in module {path} started.")
             try:
                 module = importlib.import_module(
@@ -139,7 +148,7 @@ class ECore(IECore):
             except ImportError as e:
                 self.__logger.debug(f"Discover in module {path} failed - {e}.")
                 return result
-            for name, obj in inspect.getmembers(module):
+            for _, obj in inspect.getmembers(module):
                 if not inspect.isfunction(obj) or not getattr(
                     obj, "__is_consumer__", False
                 ):
@@ -161,12 +170,12 @@ class ECore(IECore):
 
         def discover_in_package(
             path: Path,
-        ) -> Iterable[Tuple[ConsumerFunc, EventType, ConsumerGroup, int]]:
+        ) -> FoundConsumerFunctions:
             if not path.is_dir():
                 return discover_in_module(path)
 
             self.__logger.debug(f"Discover in package {path} started.")
-            result = []
+            result: FoundConsumerFunctions = []
             if not list(path.glob("__init__.py")):
                 self.__logger.debug(
                     f"Discover in package {path} failed - no __init__.py file found."
@@ -174,7 +183,6 @@ class ECore(IECore):
                 return result
 
             for obj in path.iterdir():
-                obj: Path = obj
                 if obj.is_dir():
                     result.extend(discover_in_package(obj))
                     continue
@@ -186,7 +194,9 @@ class ECore(IECore):
 
             __newline = "\n"
             self.__logger.debug(
-                f"Discover in package {path} ended. Found consumers:\n\n{__newline.join(f'{func ,event, group, clones}' for func, event, group, clones in result)}\n"
+                f"Discover in package {path} ended. "
+                "Found consumers:\n\n"
+                f"{__newline.join(f'{func, event, group, clones}' for func, event, group, clones in result)}\n"  # noqa:E501
             )
 
             return result
@@ -209,6 +219,9 @@ class ECore(IECore):
         if self.__workers_spawned:
             self.__logger.warning("Spawn workers attempt when workers already spawned.")
             return
+        if not self.__pipelines:
+            self.__logger.warning("There is no registered consumers. Nothing to spawn.")
+            return
 
         workers = self.__build_workers()
         for worker in workers:
@@ -224,7 +237,8 @@ class ECore(IECore):
             )
             __newline = "\n"
             self.__logger.debug(
-                f"Built workers:\n\n{__newline.join(repr(worker) for worker in self.__workers)}\n"
+                "Built workers:\n\n"
+                f"{__newline.join(repr(worker) for worker in self.__workers)}\n"
             )
 
         return self.__workers
