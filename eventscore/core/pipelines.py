@@ -43,7 +43,7 @@ class ProcessPipeline(IProcessPipeline):
         return Worker(
             uid=pipeline.uid,
             name=str(pipeline.uid),
-            clones=pipeline.items.pop().clones,
+            clones=pipeline.items[-1].clones,
             runner=runner,
         )
 

@@ -12,6 +12,8 @@ EventType: TypeAlias = Union[str, StrEnum, IntEnum]
 
 EncodableT = Union[str, int, bytes]
 
+DEFAULT_CONSUMER_GROUP = "default"
+
 
 class DeliverySemantic(IntEnum):
     AT_MOST_ONCE = 0
@@ -67,7 +69,7 @@ ConsumerGroup: TypeAlias = Union[str, StrEnum, IntEnum]
 class PipelineItem:
     func: ConsumerFunc
     event: EventType
-    group: ConsumerGroup
+    group: ConsumerGroup = DEFAULT_CONSUMER_GROUP
     clones: int = 1
 
     def __eq__(self, other: PipelineItem) -> bool:  # type:ignore[override]
@@ -86,7 +88,7 @@ class Pipeline:
 
 @dataclass(frozen=True, slots=True)
 class Worker:
-    uid: uuid.UUID
     name: str
-    clones: int
     runner: Any  # FIXME: type annotation causes circular import problem
+    clones: int = 1
+    uid: uuid.UUID = field(default_factory=uuid.uuid4)
