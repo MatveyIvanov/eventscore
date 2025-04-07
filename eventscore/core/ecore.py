@@ -57,6 +57,17 @@ class ECore(IECore):
         self.__workers_spawned = False
         self.__logger = logger
 
+        assert (
+            self.__process_pipeline is not None
+            or self.__process_pipeline_type is not None
+        ), "Pipeline processor is required."
+        assert (
+            self.__spawn_worker is not None or self.__spawn_worker_type is not None
+        ), "Worker spawner is required."
+        assert (
+            self.__producer is not None or self.__producer_type is not None
+        ), "Producer is required."
+
     @property
     def process_pipeline(self) -> IProcessPipeline:
         if self.__process_pipeline is None:
@@ -94,7 +105,7 @@ class ECore(IECore):
         group: ConsumerGroup,
         clones: int = 1,
     ) -> ConsumerFunc:
-        return _consumer(func, ecore=self, event=event, group=group)
+        return _consumer(func, ecore=self, event=event, group=group, clones=clones)
 
     def register_consumer(
         self,
