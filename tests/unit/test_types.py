@@ -3,7 +3,7 @@ from time import time
 
 import pytest
 
-from eventscore.core.types import Event, PipelineItem, Pipeline, Worker
+from eventscore.core.types import Event, Pipeline, PipelineItem, Worker
 
 
 class TestEvent:

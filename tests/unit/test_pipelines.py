@@ -3,11 +3,11 @@ from unittest import mock
 import pytest
 
 from eventscore.core.exceptions import (
-    EmptyPipelineError,
     ClonesMismatchError,
+    EmptyPipelineError,
     UnrelatedConsumersError,
 )
-from eventscore.core.types import Worker, PipelineItem
+from eventscore.core.types import PipelineItem, Worker
 
 
 class TestProcessPipeline:

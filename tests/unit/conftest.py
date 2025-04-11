@@ -7,7 +7,7 @@ from eventscore.core.pipelines import ProcessPipeline
 from eventscore.core.producers import Producer
 from eventscore.core.runners import ObserverRunner
 from eventscore.core.serializers import EventSerializer
-from eventscore.core.types import Event, Worker, Pipeline
+from eventscore.core.types import Event, Pipeline, Worker
 from eventscore.core.workers import SpawnMPWorker
 
 
