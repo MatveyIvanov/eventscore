@@ -66,9 +66,12 @@ class ECore(IECore):
         assert (
             self.__spawn_worker is not None or self.__spawn_worker_type is not None
         ), "Worker spawner is required."
+        # fmt:off
+        # black and ruff conflict
         assert (
             self.__producer is not None or self.__producer_type is not None
         ), "Producer is required."
+        # fmt:on
 
     @property
     def process_pipeline(self) -> IProcessPipeline:
