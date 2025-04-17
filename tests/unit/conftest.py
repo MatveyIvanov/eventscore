@@ -10,6 +10,8 @@ from eventscore.core.runners import ObserverRunner
 from eventscore.core.serializers import EventSerializer
 from eventscore.core.types import Event, Pipeline, Worker
 from eventscore.core.workers import SpawnMPWorker
+from eventscore.ext.redis.serializers import RedisEventSerializer
+from eventscore.ext.redis.streams import RedisStream
 
 
 @pytest.fixture
@@ -111,6 +113,24 @@ def threading_mock(threading_thread_mock):
 
 
 @pytest.fixture
+def redis_mock():
+    redis = mock.Mock()
+    redis.Redis.return_value = redis
+    redis.xread.return_value = [
+        (
+            b"event",
+            (
+                (
+                    b"uid",
+                    {b"value": b"data"},
+                )
+            ),
+        )
+    ]
+    return redis
+
+
+@pytest.fixture
 def consumer(consumer_func_mock):
     return Consumer(consumer_func_mock)
 
@@ -144,6 +164,20 @@ def event_serializer():
 
 
 @pytest.fixture
+def redis_event_serializer():
+    return RedisEventSerializer()
+
+
+class _SKIP:
+    def __bool__(self):
+        return False
+
+
+SKIP = _SKIP()
+SELF = "self"
+
+
+@pytest.fixture
 def ecore_factory(stream_mock, process_pipeline_mock, spawn_worker_mock, producer_mock):
     def factory(
         stream=stream_mock,
@@ -156,18 +190,53 @@ def ecore_factory(stream_mock, process_pipeline_mock, spawn_worker_mock, produce
         producer=producer_mock,
         producer_type=Producer,
         producer_init_kwargs=None,
+        kwdefaults_overrides=None,
     ):
-        return ECore(
-            stream=stream,
-            process_pipeline=process_pipeline,
-            process_pipeline_type=process_pipeline_type,
-            process_pipeline_init_kwargs=process_pipeline_init_kwargs,
-            spawn_worker=spawn_worker,
-            spawn_worker_type=spawn_worker_type,
-            spawn_worker_init_kwargs=spawn_worker_init_kwargs,
-            producer=producer,
-            producer_type=producer_type,
-            producer_init_kwargs=producer_init_kwargs,
-        )
+        kwargs = {}
+        if stream != SKIP:
+            kwargs["stream"] = stream
+        if process_pipeline != SKIP:
+            kwargs["process_pipeline"] = process_pipeline
+        if process_pipeline_type != SKIP:
+            kwargs["process_pipeline_type"] = process_pipeline_type
+        if process_pipeline_init_kwargs != SKIP:
+            kwargs["process_pipeline_init_kwargs"] = process_pipeline_init_kwargs
+        if spawn_worker != SKIP:
+            kwargs["spawn_worker"] = spawn_worker
+        if spawn_worker_type != SKIP:
+            kwargs["spawn_worker_type"] = spawn_worker_type
+        if spawn_worker_init_kwargs != SKIP:
+            kwargs["spawn_worker_init_kwargs"] = spawn_worker_init_kwargs
+        if producer != SKIP:
+            kwargs["producer"] = producer
+        if producer_type != SKIP:
+            kwargs["producer_type"] = producer_type
+        if producer_init_kwargs != SKIP:
+            kwargs["producer_init_kwargs"] = producer_init_kwargs
+
+        if kwdefaults_overrides:
+            kwdefaults = ECore.__init__.__kwdefaults__
+            kwdefaults.update(kwdefaults_overrides)
+            with mock.patch.object(ECore.__init__, "__kwdefaults__", kwdefaults):
+                return ECore(**kwargs)
+        return ECore(**kwargs)
+
+    return factory
+
+
+@pytest.fixture
+def consumer_decorator_mock():
+    return mock.Mock()
+
+
+@pytest.fixture
+def event_serializer_mock():
+    return mock.Mock()
+
+
+@pytest.fixture
+def redis_stream_factory(event_serializer_mock):
+    def factory():
+        return RedisStream("redis", 6379, 0, event_serializer_mock)
 
     return factory

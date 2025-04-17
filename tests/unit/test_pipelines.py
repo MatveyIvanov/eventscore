@@ -10,6 +10,7 @@ from eventscore.core.exceptions import (
 from eventscore.core.types import PipelineItem, Worker
 
 
+@pytest.mark.unit
 class TestProcessPipeline:
     @pytest.mark.parametrize(
         "items,expected_error,expected_clones,expected_event",
@@ -48,6 +49,13 @@ class TestProcessPipeline:
                 2,
                 "ev",
             ),
+        ),
+        ids=(
+            "empty-pipeline",
+            "clones-mismatch",
+            "unrelated-consumers",
+            "single-item",
+            "multiple-items",
         ),
     )
     def test_process(

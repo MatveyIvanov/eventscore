@@ -21,7 +21,7 @@ def consumer(
         setattr(func, "__consumer_clones__", clones)
 
         @functools.wraps(func)
-        def wrapper(*args, **kwargs) -> Any:
+        def wrapper(*args: Any, **kwargs: Any) -> Any:
             return func(*args, **kwargs)
 
         return wrapper

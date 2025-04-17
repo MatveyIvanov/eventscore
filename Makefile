@@ -4,6 +4,8 @@ unittest:
 	poetry run pytest . -m unit
 integrationtest:
 	poetry run pytest . -m integration
+e2etest:
+	poetry run pytest . -m e2e
 lint:
 	poetry run flake8 .
 	poetry run ruff check
@@ -12,6 +14,7 @@ typecheck:
 	poetry run pyright .
 format:
 	poetry run black $(OPTS) .
+	poetry run ruff format $(OPTS)
 formatcheck:
 	$(MAKE) OPTS=--check format
 sort:

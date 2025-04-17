@@ -41,4 +41,14 @@ To get started with developing `eventscore`, see [CONTRIBUTING.md](CONTRIBUTING.
 
 Stable release roadmap
 ----------------------------------
-* ...
+
+* 100% unit-test coverage
+* integration tests for threading and multiprocessing
+* e2e tests
+* 100% docs coverage
+* Kafka support
+* outbox pattern support
+* at least once semantic support
+* at most once semantic support
+* stress-tests, with/without eventscore performance comparison
+* 

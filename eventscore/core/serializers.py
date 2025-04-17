@@ -4,7 +4,7 @@ from eventscore.core.abstract import IEventSerializer
 from eventscore.core.types import Event
 
 
-class EventSerializer(IEventSerializer):
+class EventSerializer(IEventSerializer[bytes, bytes]):
     def encode(self, event: Event) -> bytes:
         return json.dumps(event.asdict()).encode()
 

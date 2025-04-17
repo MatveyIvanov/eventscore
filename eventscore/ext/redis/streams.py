@@ -1,5 +1,5 @@
 from collections import defaultdict
-from typing import Any, Dict, List, Tuple, TypeAlias
+from typing import Any, TypeAlias
 
 import redis
 
@@ -8,7 +8,7 @@ from eventscore.core.exceptions import EmptyStreamError, TooManyDataError
 from eventscore.core.logging import logger
 from eventscore.core.types import Event
 
-XReadT: TypeAlias = List[Tuple[bytes, List[Tuple[bytes, Dict[bytes, bytes]]]]]
+XReadT: TypeAlias = list[tuple[bytes, list[tuple[bytes, dict[bytes, bytes]]]]]
 
 
 class RedisStream(IStream):
@@ -18,7 +18,7 @@ class RedisStream(IStream):
         port: int,
         db: int,
         serializer: IEventSerializer[bytes, str],
-        redis_init_kwargs: Dict[str, Any] | None = None,
+        redis_init_kwargs: dict[str, Any] | None = None,
     ) -> None:
         redis_init_kwargs = redis_init_kwargs or {}
         redis_init_kwargs.update(
@@ -30,7 +30,7 @@ class RedisStream(IStream):
         )
         self.__redis = redis.Redis(**redis_init_kwargs)
         self.__serializer = serializer
-        self.__event_to_latest_id: Dict[EventType, str] = defaultdict(lambda: "0")
+        self.__event_to_latest_id: dict[EventType, str] = defaultdict(lambda: "0")
         self.__logger = logger
 
     def put(
@@ -40,7 +40,7 @@ class RedisStream(IStream):
         block: bool = True,
         timeout: int = 5,
     ) -> None:
-        self.__redis.xadd(
+        _ = self.__redis.xadd(
             name=str(event.type),
             fields={"value": self.__serializer.encode(event)},
             # id=str(event.uid),

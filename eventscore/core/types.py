@@ -1,16 +1,17 @@
 from __future__ import annotations
 
 import uuid
+from collections.abc import Callable, Mapping
 from dataclasses import dataclass, field
 from enum import IntEnum, StrEnum
 from time import time
-from typing import Any, Callable, Mapping, Set, TypeAlias, TypedDict, Union
+from typing import Any, TypeAlias, TypedDict
 
 # FIXME: Duplicating definitions from abstract for now,
 # FIXME: to evade circular import problem
-EventType: TypeAlias = Union[str, StrEnum, IntEnum]
+EventType: TypeAlias = str | StrEnum | IntEnum
 
-EncodableT = Union[str, int, bytes]
+EncodableT = str | int | bytes
 
 DEFAULT_CONSUMER_GROUP = "default"
 
@@ -62,7 +63,7 @@ class Event:
 # FIXME: Duplicating definitions from abstract for now,
 # FIXME: to evade circular import problem
 ConsumerFunc: TypeAlias = Callable[[Event], Any]
-ConsumerGroup: TypeAlias = Union[str, StrEnum, IntEnum]
+ConsumerGroup: TypeAlias = str | StrEnum | IntEnum
 
 
 @dataclass(frozen=True, slots=True)
@@ -83,7 +84,7 @@ class PipelineItem:
 @dataclass(frozen=True, slots=True)
 class Pipeline:
     uid: uuid.UUID = field(default_factory=uuid.uuid4)
-    items: Set[PipelineItem] = field(default_factory=set)
+    items: set[PipelineItem] = field(default_factory=set)
 
 
 @dataclass(frozen=True, slots=True)

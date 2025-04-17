@@ -32,11 +32,12 @@ class ObserverRunner(IRunner):
                 continue
 
             events_counter += 1
-            tasks = [
+            tasks = tuple(
                 threading.Thread(target=consumer.consume, args=(event,))
                 for consumer in self.__consumers
-            ]
+            )
             for task in tasks:
+                print(task, threading)
                 task.start()
                 self.__logger.debug(f"Consumer thread {task.ident} has started.")
 

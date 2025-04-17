@@ -6,6 +6,7 @@ import pytest
 from eventscore.core.types import Event, Pipeline, PipelineItem, Worker
 
 
+@pytest.mark.unit
 class TestEvent:
     @property
     def _full_init(self):
@@ -23,6 +24,12 @@ class TestEvent:
             ("uid", uuid.UUID, None),
             ("ts", str, None),
             ("payload", dict, None),
+        ),
+        ids=(
+            "missing-type",
+            "missing-uid",
+            "missing-ts",
+            "missing-payload",
         ),
     )
     def test_defaults(self, missing_field, expect_type, expect_error):
@@ -74,6 +81,10 @@ class TestEvent:
                 },
             ),
         ),
+        ids=(
+            "empty-payload-event",
+            "filled-payload-event",
+        ),
     )
     def test_asdict(self, event, expected_dict):
         assert event.asdict() == expected_dict
@@ -114,11 +125,16 @@ class TestEvent:
                 ),
             ),
         ),
+        ids=(
+            "empty-payload-event",
+            "filled-payload-event",
+        ),
     )
     def test_fromdict(self, dct, expected_event):
         assert Event.fromdict(dct) == expected_event
 
 
+@pytest.mark.unit
 class TestPipelineItem:
     @property
     def _full_init(self):
@@ -136,6 +152,12 @@ class TestPipelineItem:
             ("event", None, TypeError),
             ("group", str, None),
             ("clones", int, None),
+        ),
+        ids=(
+            "missing-func",
+            "missing-event",
+            "missing-group",
+            "missing-clones",
         ),
     )
     def test_defaults(self, missing_field, expect_type, expect_error):
@@ -180,11 +202,19 @@ class TestPipelineItem:
                 False,
             ),
         ),
+        ids=(
+            "equal",
+            "equal-with-clones-diff",
+            "not-equal-func-diff",
+            "not-equal-event-diff",
+            "not-equal-group-diff",
+        ),
     )
     def test_eq(self, item1, item2, expect_equal):
         assert (item1 == item2) is expect_equal
 
 
+@pytest.mark.unit
 class TestPipeline:
     @property
     def _full_init(self):
@@ -198,6 +228,10 @@ class TestPipeline:
         (
             ("uid", uuid.UUID, None),
             ("items", set, None),
+        ),
+        ids=(
+            "missing-uid",
+            "missing-items",
         ),
     )
     def test_defaults(self, missing_field, expect_type, expect_error):
@@ -214,6 +248,7 @@ class TestPipeline:
             assert isinstance(getattr(pipeline, missing_field), expect_type)
 
 
+@pytest.mark.unit
 class TestWorker:
     @property
     def _full_init(self):
@@ -231,6 +266,12 @@ class TestWorker:
             ("runner", None, TypeError),
             ("clones", int, None),
             ("uid", uuid.UUID, None),
+        ),
+        ids=(
+            "missing-name",
+            "missing-runner",
+            "missing-clones",
+            "missing-uid",
         ),
     )
     def test_defaults(self, missing_field, expect_type, expect_error):

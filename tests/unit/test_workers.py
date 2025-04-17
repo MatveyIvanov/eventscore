@@ -3,8 +3,13 @@ from unittest import mock
 import pytest
 
 
+@pytest.mark.unit
 class TestSpawnMPWorker:
-    @pytest.mark.parametrize("clones", (0, 1, 2))
+    @pytest.mark.parametrize(
+        "clones",
+        (0, 1, 2),
+        ids=("zero-clones", "one-clone", "two-clones"),
+    )
     def test_spawn(
         self,
         clones,

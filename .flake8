@@ -8,6 +8,11 @@ exclude =
     docs
     examples
 max-line-length = 88
+max-doc-length = 130
+indent-size = 4
+disable-noqa = False
+statistics = True
+color = always
 per-file-ignores =
     __init__.py:F401
     *test_*.py:E501,F401

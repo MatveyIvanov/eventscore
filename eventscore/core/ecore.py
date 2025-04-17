@@ -2,8 +2,9 @@ import importlib
 import inspect
 import os
 from collections import defaultdict
+from collections.abc import Mapping
 from pathlib import Path
-from typing import Any, Dict, List, Mapping, Tuple, Type, TypeAlias
+from typing import Any, TypeAlias
 
 from eventscore.core.abstract import (
     ConsumerFunc,
@@ -23,8 +24,8 @@ from eventscore.core.types import Event
 from eventscore.core.workers import SpawnMPWorker, Worker
 from eventscore.decorators import consumer as _consumer
 
-FoundConsumerFunctions: TypeAlias = List[
-    Tuple[ConsumerFunc, EventType, ConsumerGroup, int]
+FoundConsumerFunctions: TypeAlias = list[
+    tuple[ConsumerFunc, EventType, ConsumerGroup, int]
 ]
 
 
@@ -32,14 +33,15 @@ class ECore(IECore):
     def __init__(
         self,
         stream: IStream,
+        *,
         process_pipeline: IProcessPipeline | None = None,
-        process_pipeline_type: Type[IProcessPipeline] = ProcessPipeline,
+        process_pipeline_type: type[IProcessPipeline] = ProcessPipeline,
         process_pipeline_init_kwargs: Mapping[str, Any] | None = None,
         spawn_worker: ISpawnWorker | None = None,
-        spawn_worker_type: Type[ISpawnWorker] = SpawnMPWorker,
+        spawn_worker_type: type[ISpawnWorker] = SpawnMPWorker,
         spawn_worker_init_kwargs: Mapping[str, Any] | None = None,
         producer: IProducer | None = None,
-        producer_type: Type[IProducer] = Producer,
+        producer_type: type[IProducer] = Producer,
         producer_init_kwargs: Mapping[str, Any] | None = None,
     ) -> None:
         self.__stream = stream
@@ -52,8 +54,8 @@ class ECore(IECore):
         self.__producer = producer
         self.__producer_type = producer_type
         self.__producer_init_kwargs = producer_init_kwargs
-        self.__pipelines: Dict[ConsumerGroup, Pipeline] = defaultdict(Pipeline)
-        self.__workers: Tuple[Worker, ...] | None = None
+        self.__pipelines: dict[ConsumerGroup, Pipeline] = defaultdict(Pipeline)
+        self.__workers: tuple[Worker, ...] | None = None
         self.__workers_spawned = False
         self.__logger = logger
 
@@ -80,7 +82,7 @@ class ECore(IECore):
     def spawn_worker(self) -> ISpawnWorker:
         if self.__spawn_worker is None:
             self.__spawn_worker = self.__spawn_worker_type(
-                **(self.__spawn_worker_init_kwargs or {})
+                **(self.__spawn_worker_init_kwargs or dict())
             )
         return self.__spawn_worker
 
@@ -117,7 +119,7 @@ class ECore(IECore):
         if self.__workers_spawned:
             self.__logger.error("Consumer registration attempt after spawning.")
             raise AlreadySpawnedError
-        self.__pipelines[group].items.add(  # type:ignore[index]
+        self.__pipelines[group].items.add(
             PipelineItem(
                 func=func,
                 event=event,
@@ -127,11 +129,11 @@ class ECore(IECore):
         )
         self.__logger.info(
             "Consumer with "
-            f"func={func.__name__}, "
-            f"event={event}, "
-            f"group={group}, "
-            f"clones={clones} "
-            "is successfully registered."
+            + f"func={func.__name__}, "
+            + f"event={event}, "
+            + f"group={group}, "
+            + f"clones={clones} "
+            + "is successfully registered."
         )
 
     def discover_consumers(self, *, root: str | None = None) -> None:
@@ -161,7 +163,9 @@ class ECore(IECore):
                 return result
             for _, obj in inspect.getmembers(module):
                 if not inspect.isfunction(obj) or not getattr(
-                    obj, "__is_consumer__", False
+                    obj,
+                    "__is_consumer__",
+                    False,
                 ):
                     continue
 
@@ -206,8 +210,8 @@ class ECore(IECore):
             __newline = "\n"
             self.__logger.debug(
                 f"Discover in package {path} ended. "
-                "Found consumers:\n\n"
-                f"{__newline.join(f'{func, event, group, clones}' for func, event, group, clones in result)}\n"  # noqa:E501
+                + "Found consumers:\n\n"
+                + f"{__newline.join(f'{func, event, group, clones}' for func, event, group, clones in result)}\n"  # noqa:E501
             )
 
             return result
@@ -240,7 +244,7 @@ class ECore(IECore):
         self.__workers_spawned = True
         self.__logger.debug("Workers successfully spawned.")
 
-    def __build_workers(self) -> Tuple[Worker, ...]:
+    def __build_workers(self) -> tuple[Worker, ...]:
         if not self.__workers:
             self.__workers = tuple(
                 self.process_pipeline(pipeline, self)
@@ -249,7 +253,7 @@ class ECore(IECore):
             __newline = "\n"
             self.__logger.debug(
                 "Built workers:\n\n"
-                f"{__newline.join(repr(worker) for worker in self.__workers)}\n"
+                + f"{__newline.join(repr(worker) for worker in self.__workers)}\n"
             )
 
         return self.__workers

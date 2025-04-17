@@ -5,6 +5,7 @@ import pytest
 from eventscore.core.exceptions import EmptyStreamError
 
 
+@pytest.mark.unit
 class TestObserverRunner:
     @pytest.mark.parametrize(
         "max_events,consumers,expect_error",
@@ -14,10 +15,21 @@ class TestObserverRunner:
             (-1, ["c1", "c2"], False),
             (0, [], True),
             (0, ["consumer"], True),
-            (1, ["c1", "c2"], False),
+            (0, ["c1", "c2"], True),
             (1, [], True),
             (1, ["consumer"], False),
             (1, ["c1", "c2"], False),
+        ),
+        ids=(
+            "no-event-limit-no-consumers-error",
+            "no-event-limit-single-consumer",
+            "no-event-limit-multiple-consumers",
+            "zero-event-limit-error-no-consumers",
+            "zero-event-limit-error-single-consumer",
+            "zero-event-limit-error-multiple-consumers",
+            "one-event-limit-no-consumers-error",
+            "one-event-limit-single-consumer",
+            "one-event-limit-multiple-consumers",
         ),
     )
     def test_init(self, max_events, consumers, expect_error, observer_runner_factory):
@@ -40,6 +52,15 @@ class TestObserverRunner:
             (["e1", EmptyStreamError, "e2"], 1, 1),
             (["e1", EmptyStreamError, "e2"], 2, 2),
         ),
+        ids=(
+            "event--one-event-limit",
+            "event->event--one-event-limit",
+            "event->event--two-event-limit",
+            "event->empty--one-event-limit",
+            "empty->event--one-event-limit",
+            "event->empty->event--one-event-limit",
+            "event->empty->event--two-event-limit",
+        ),
     )
     @pytest.mark.parametrize(
         "consumers",
@@ -48,6 +69,7 @@ class TestObserverRunner:
             [mock.Mock(), mock.Mock()],
             [mock.Mock(), mock.Mock(), mock.Mock()],
         ),
+        ids=("one-consumer", "two-consumers", "three-consumers"),
     )
     def test_run(
         self,
@@ -60,6 +82,11 @@ class TestObserverRunner:
         threading_mock,
         threading_thread_mock,
     ):
+        if max_events > len(events):
+            pytest.skip(
+                "Infinite loop prevented. max_events must be less than len(events)."
+            )
+
         events_to_pop = events.copy()
         expected_events_to_process_lst = list(
             event for event in events if event != EmptyStreamError
@@ -98,9 +125,16 @@ class TestObserverRunner:
                 expected_start_calls.append(mock.call())
                 expected_join_calls.append(mock.call())
 
+            for _ in consumers:
+                expected_thread_calls.append(mock.call().start())
+
+            for _ in consumers:
+                expected_thread_calls.append(mock.call().join())
+
         with mock.patch("eventscore.core.runners.threading", threading_mock):
             observer_runner_factory("event", max_events, *consumers).run()
 
+        stream_mock.pop.assert_has_calls(expected_stream_pop_calls)
         threading_mock.Thread.assert_has_calls(expected_thread_calls)
         threading_thread_mock.start.assert_has_calls(expected_start_calls)
         threading_thread_mock.join.assert_has_calls(expected_join_calls)

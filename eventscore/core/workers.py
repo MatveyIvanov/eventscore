@@ -10,7 +10,7 @@ class SpawnMPWorker(ISpawnWorker):
         self.__logger = logger
 
     def __call__(self, worker: Worker) -> None:
-        processes = []
+        processes: list[mp.Process] = []
         for _ in range(worker.clones):
             process = mp.Process(target=worker.runner.run, daemon=True)
             processes.append(process)
