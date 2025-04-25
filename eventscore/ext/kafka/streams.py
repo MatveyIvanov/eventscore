@@ -1,13 +1,13 @@
-from typing import TypeAlias, Any
+from typing import Any, TypeAlias
 
 from kafka import KafkaConsumer, KafkaProducer
 from kafka.errors import KafkaTimeoutError
 
-from eventscore.core.abstract import IStream, EventType, IEventSerializer
+from eventscore.core.abstract import EventType, IEventSerializer, IStream
 from eventscore.core.exceptions import (
     EmptyStreamError,
-    TooManyDataError,
     EventNotSentError,
+    TooManyDataError,
 )
 from eventscore.core.types import Event
 

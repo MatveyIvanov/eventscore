@@ -49,4 +49,3 @@ napoleon_attr_annotations = True
 
 html_theme = "alabaster"
 html_static_path = ["_static"]
-
