@@ -1,10 +1,18 @@
+import logging
+
 from eventscore.core.abstract import IECore, IProducer
-from eventscore.core.logging import logger
+from eventscore.core.logging import logger as _logger
 from eventscore.core.types import Event
 
 
 class Producer(IProducer):
-    def __init__(self, ecore: IECore) -> None:
+    def __init__(self, ecore: IECore, logger: logging.Logger = _logger) -> None:
+        """
+        Construct producer instance
+
+        :param ecore: Event core instance
+        :type ecore: IECore
+        """
         self.__ecore = ecore
         self.__logger = logger
 

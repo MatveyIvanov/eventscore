@@ -1,10 +1,12 @@
+import logging
+
 from eventscore.core.abstract import ConsumerFunc, IConsumer
-from eventscore.core.logging import logger
+from eventscore.core.logging import logger as _logger
 from eventscore.core.types import Event
 
 
 class Consumer(IConsumer):
-    def __init__(self, func: ConsumerFunc) -> None:
+    def __init__(self, func: ConsumerFunc, logger: logging.Logger = _logger) -> None:
         self.__func = func
         self.__logger = logger
 

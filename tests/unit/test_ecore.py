@@ -4,8 +4,9 @@ from unittest import mock
 import pytest
 
 from eventscore.core.exceptions import AlreadySpawnedError
+from eventscore.core.logging import logger as _logger
 from eventscore.core.types import Event, Pipeline, PipelineItem
-from tests.unit.conftest import SELF, SKIP
+from tests.unit.conftest import SKIP
 
 
 @pytest.mark.unit
@@ -78,14 +79,27 @@ class TestECore:
         ),
     )
     @pytest.mark.parametrize(
-        "property_name,property_specific_args",
-        (("process_pipeline", None), ("spawn_worker", None), ("producer", (SELF,))),
-        ids=("process-pipeline", "spawn-worker", "producer"),
+        "property_name",
+        (
+            "process_pipeline",
+            "spawn_worker",
+            "producer",
+        ),
+        ids=(
+            "process-pipeline",
+            "spawn-worker",
+            "producer",
+        ),
+    )
+    @pytest.mark.parametrize(
+        "logger",
+        (SKIP, mock.Mock()),
+        ids=("default-logger", "custom-logger"),
     )
     def test_properties(
         self,
+        logger,
         property_name,
-        property_specific_args,
         instance,
         expect_init,
         type,
@@ -96,38 +110,45 @@ class TestECore:
         if instance in (None, SKIP) and type is None:
             pytest.skip("Skipping expected error. Error covered in another test.")
 
+        # IMHO, this is a bug in pytest
+        # Keeping state between parametrize params is not what I expect
+        if isinstance(init_kwargs, dict):
+            init_kwargs.pop("logger", None)
+            init_kwargs.pop("ecore", None)
+
         kwargs = {
             property_name: instance,
             f"{property_name}_type": type,
             f"{property_name}_init_kwargs": init_kwargs,
         }
+        if logger != SKIP:
+            kwargs["logger"] = logger
         if type in (None, SKIP):
             # mock default value
             type = mock.Mock()
-
-        type.reset_mock()
 
         ecore = ecore_factory(
             kwdefaults_overrides={f"{property_name}_type": type},
             **kwargs,
         )
-        if property_specific_args:
-            property_specific_args = tuple(
-                arg if arg != SELF else ecore for arg in property_specific_args
-            )
+
+        expected_init_kwargs["logger"] = logger or _logger
+        if property_name in ("producer",):
+            expected_init_kwargs["ecore"] = ecore
+        else:
+            # Same bug in pytest
+            expected_init_kwargs.pop("ecore", None)
+
+        for obj in (type, instance, logger):
+            if isinstance(obj, mock.Mock):
+                obj.reset_mock()
 
         if expect_init:
             assert getattr(ecore, property_name) == type.return_value
-            type.assert_called_once_with(
-                *(property_specific_args or tuple()),
-                **expected_init_kwargs,
-            )
+            type.assert_called_once_with(**expected_init_kwargs)
             # second call, still called once
             assert getattr(ecore, property_name) == type.return_value
-            type.assert_called_once_with(
-                *(property_specific_args or tuple()),
-                **expected_init_kwargs,
-            )
+            type.assert_called_once_with(**expected_init_kwargs)
         else:
             assert getattr(ecore, property_name) == instance
             type.assert_not_called()
@@ -216,7 +237,6 @@ class TestECore:
                     )
                 },
             )
-
         else:
             ecore.register_consumer(**kwargs)
 

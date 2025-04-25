@@ -1,11 +1,12 @@
+import logging
 from collections import defaultdict
 from typing import Any, TypeAlias
 
-import redis
+from redis import Redis
 
 from eventscore.core.abstract import EventType, IEventSerializer, IStream
 from eventscore.core.exceptions import EmptyStreamError, TooManyDataError
-from eventscore.core.logging import logger
+from eventscore.core.logging import logger as _logger
 from eventscore.core.types import Event
 
 XReadT: TypeAlias = list[tuple[bytes, list[tuple[bytes, dict[bytes, bytes]]]]]
@@ -14,12 +15,33 @@ XReadT: TypeAlias = list[tuple[bytes, list[tuple[bytes, dict[bytes, bytes]]]]]
 class RedisStream(IStream):
     def __init__(
         self,
-        host: str,
-        port: int,
-        db: int,
+        *,
         serializer: IEventSerializer[bytes, str],
+        redis: Redis | None = None,
+        host: str | None = None,
+        port: int | None = None,
+        db: int | None = None,
         redis_init_kwargs: dict[str, Any] | None = None,
+        logger: logging.Logger = _logger,
     ) -> None:
+        """
+        Construct Redis stream instance
+
+        :param host: Redis host
+        :type host: str
+        :param port: Redis port
+        :type port: int
+        :param db: Redis database
+        :type db: int
+        :param serializer: Event serializer
+        :type serializer: IEventSerializer[bytes, str]
+        :param redis_init_kwargs: Redis initialization kwargs
+        :type redis_init_kwargs: dict[str, Any] | None
+        """
+        assert redis is not None or (
+            host is not None and port is not None and db is not None
+        ), "Redis instance or required params for its constructing are required."
+
         redis_init_kwargs = redis_init_kwargs or {}
         redis_init_kwargs.update(
             dict(
@@ -28,7 +50,7 @@ class RedisStream(IStream):
                 db=db,
             )
         )
-        self.__redis = redis.Redis(**redis_init_kwargs)
+        self.__redis = redis or Redis(**redis_init_kwargs)
         self.__serializer = serializer
         self.__event_to_latest_id: dict[EventType, str] = defaultdict(lambda: "0")
         self.__logger = logger

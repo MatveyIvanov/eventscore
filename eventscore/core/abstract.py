@@ -1,20 +1,41 @@
 from __future__ import annotations
 
+import logging
 from collections.abc import Callable
 from enum import IntEnum, StrEnum
 from typing import Any, Protocol, TypeAlias, TypeVar
 
+from eventscore.core.logging import logger as _logger
 from eventscore.core.types import Event, Pipeline, Worker
 
+# Type alias for user-defined event type
 EventType: TypeAlias = str | StrEnum | IntEnum
+# Type alias for user-defined consumer functions/other callable
 ConsumerFunc: TypeAlias = Callable[[Event], Any]
+# Type alias for user-defined consumer group
 ConsumerGroup: TypeAlias = str | StrEnum | IntEnum
 
+# Type variable for serializer input
 IType = TypeVar("IType", contravariant=True)
+# Type variable for serializer output
 RType = TypeVar("RType", covariant=True)
 
 
 class IECore(Protocol):
+    """
+    Event core class.
+    Can be used for:
+        * Accessing pipeline processor
+        * Accessing worker spawner
+        * Accessing producer
+        * Accessing event stream
+        * Decorating functions to make them consumers
+        * Registering functions to make them consumers
+        * Discovering consumers marked with @(ecore.)consumer decorator
+        * Producing events
+        * Spawning workers bulit from registered consumers
+    """
+
     __slots__ = ()
 
     @property
@@ -150,6 +171,12 @@ class IECore(Protocol):
 
 
 class IProcessPipeline(Protocol):
+    """
+    Pipeline processor class.
+    One and only purpose of this class is to build worker
+    based on a given pipeline.
+    """
+
     __slots__ = ()
 
     def __call__(self, pipeline: Pipeline, ecore: IECore) -> Worker:
@@ -167,6 +194,11 @@ class IProcessPipeline(Protocol):
 
 
 class ISpawnWorker(Protocol):
+    """
+    Worker spawner class.
+    One and only purpose of this class is to spawn a given worker.
+    """
+
     __slots__ = ()
 
     def __call__(self, worker: Worker) -> None:
@@ -182,6 +214,11 @@ class ISpawnWorker(Protocol):
 
 
 class IEventSerializer(Protocol[IType, RType]):
+    """
+    Event serializer class.
+    One and only purpose of this class is to encode and decode events.
+    """
+
     __slots__ = ()
 
     def encode(self, event: Event) -> RType:
@@ -208,18 +245,12 @@ class IEventSerializer(Protocol[IType, RType]):
 
 
 class IProducer(Protocol):
+    """
+    Producer class.
+    One and only purpose of this class is to produce events.
+    """
+
     __slots__ = ()
-
-    def __init__(self, ecore: IECore, **kwargs: Any):
-        """
-        Construct producer instance
-
-        :param ecore: Event core instance
-        :type ecore: IECore
-        :param kwargs: Any extra kwargs
-        :type kwargs: Dict[str, Extra]
-        """
-        ...
 
     def produce(
         self,
@@ -246,6 +277,11 @@ class IProducer(Protocol):
 
 
 class IStream(Protocol):
+    """
+    Event stream class.
+    One and only purpose of this class is to put and pop events.
+    """
+
     __slots__ = ()
 
     def put(
@@ -296,6 +332,25 @@ class IStream(Protocol):
 
 
 class IRunner(Protocol):
+    """
+    Runner class.
+    One and only purpose of this class is to run given consumers.
+
+    :param stream: Event stream
+    :type stream: IStream
+    :param event: Event type
+    :type event: EventType
+    :param consumers: Consumers
+    :type consumers: Tuple[IConsumer, ...]
+    :param max_events: Max events to process
+        Defaults to -1.
+        If value is equal to -1,
+        then there is not limit for number of events to process
+    :type max_events: int
+    :param logger: Logger instance
+    :type logger: logging.Logger
+    """
+
     __slots__ = ()
 
     def __init__(
@@ -303,18 +358,9 @@ class IRunner(Protocol):
         stream: IStream,
         event: EventType,
         *consumers: IConsumer,
-    ) -> None:
-        """
-        Construct runner instance
-
-        :param stream: Event stream
-        :type stream: IStream
-        :param event: Event type
-        :type event: EventType
-        :param consumers: Consumers
-        :type consumers: Tuple[IConsumer]
-        """
-        ...
+        max_events: int = -1,
+        logger: logging.Logger = _logger,
+    ) -> None: ...
 
     def run(self) -> None:
         """
@@ -327,14 +373,21 @@ class IRunner(Protocol):
 
 
 class IConsumer(Protocol):
+    """
+    Consumer class.
+    One and only purpose of this class is to consume events.
+    """
+
     __slots__ = ()
 
-    def __init__(self, func: ConsumerFunc) -> None:
+    def __init__(self, func: ConsumerFunc, logger: logging.Logger = _logger) -> None:
         """
         Construct consumer instance
 
         :param func: Consumer function
         :type func: ConsumerFunc
+        :param logger: Logger instance
+        :type logger: logging.Logger
         """
         ...
 

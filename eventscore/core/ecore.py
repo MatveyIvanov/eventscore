@@ -1,8 +1,8 @@
 import importlib
 import inspect
+import logging
 import os
 from collections import defaultdict
-from collections.abc import Mapping
 from pathlib import Path
 from typing import Any, TypeAlias
 
@@ -17,7 +17,7 @@ from eventscore.core.abstract import (
     IStream,
 )
 from eventscore.core.exceptions import AlreadySpawnedError
-from eventscore.core.logging import logger
+from eventscore.core.logging import logger as _logger
 from eventscore.core.pipelines import Pipeline, PipelineItem, ProcessPipeline
 from eventscore.core.producers import Producer
 from eventscore.core.types import Event
@@ -36,14 +36,53 @@ class ECore(IECore):
         *,
         process_pipeline: IProcessPipeline | None = None,
         process_pipeline_type: type[IProcessPipeline] = ProcessPipeline,
-        process_pipeline_init_kwargs: Mapping[str, Any] | None = None,
+        process_pipeline_init_kwargs: dict[str, Any] | None = None,
         spawn_worker: ISpawnWorker | None = None,
         spawn_worker_type: type[ISpawnWorker] = SpawnMPWorker,
-        spawn_worker_init_kwargs: Mapping[str, Any] | None = None,
+        spawn_worker_init_kwargs: dict[str, Any] | None = None,
         producer: IProducer | None = None,
         producer_type: type[IProducer] = Producer,
-        producer_init_kwargs: Mapping[str, Any] | None = None,
+        producer_init_kwargs: dict[str, Any] | None = None,
+        logger: logging.Logger = _logger,
     ) -> None:
+        """
+        ECore constructor
+
+        :param stream: Event stream instance
+        :type stream: IStream
+        :param process_pipeline: Pipeline processor. Defaults to None
+        :type process_pipeline: IProcessPipeline | None
+        :param process_pipeline_type: Type of the pipeline processor.
+            Defaults to ProcessPipeline.
+            Param is ignored when process_pipeline is not None
+        :type process_pipeline_type: type[IProcessPipeline]
+        :param process_pipeline_init_kwargs: Initial kwargs for pipeline processor type.
+            Defaults to None.
+            Param is ignored when process_pipeline is not None
+        :type process_pipeline_init_kwargs: dict[str, Any] | None
+        :param spawn_worker: Worker spawner. Defaults to None
+        :type spawn_worker: ISpawnWorker | None
+        :param spawn_worker_type: Type of the worker spawner.
+            Defaults to SpawnMPWorker.
+            Param is ignored when spawn_worker is not None
+        :type spawn_worker_type: type[ISpawnWorker]
+        :param spawn_worker_init_kwargs: Initial kwargs for worker spawner type.
+            Defaults to None.
+            Param is ignored when spawn_worker is not None
+        :type spawn_worker_init_kwargs: dict[str, Any] | None
+        :param producer: Producer. Defaults to None
+        :type producer: IProducer | None
+        :param producer_type: Type of the producer.
+            Defaults to Producer.
+            Param is ignored when producer is not None
+        :type producer_type: type[IProducer]
+        :param producer_init_kwargs: Initial kwargs for producer type.
+            Defaults to None.
+            Param is ignored when producer is not None
+        :type producer_init_kwargs: dict[str, Any] | None
+        :param logger: Logger. Defaults to _logger
+        :type logger: logging.Logger | None
+        """
         self.__stream = stream
         self.__process_pipeline = process_pipeline
         self.__process_pipeline_type = process_pipeline_type
@@ -76,26 +115,26 @@ class ECore(IECore):
     @property
     def process_pipeline(self) -> IProcessPipeline:
         if self.__process_pipeline is None:
-            self.__process_pipeline = self.__process_pipeline_type(
-                **(self.__process_pipeline_init_kwargs or {})
-            )
+            kwargs = self.__process_pipeline_init_kwargs or {}
+            kwargs.setdefault("logger", self.__logger)
+            self.__process_pipeline = self.__process_pipeline_type(**kwargs)
         return self.__process_pipeline
 
     @property
     def spawn_worker(self) -> ISpawnWorker:
         if self.__spawn_worker is None:
-            self.__spawn_worker = self.__spawn_worker_type(
-                **(self.__spawn_worker_init_kwargs or dict())
-            )
+            kwargs = self.__spawn_worker_init_kwargs or {}
+            kwargs.setdefault("logger", self.__logger)
+            self.__spawn_worker = self.__spawn_worker_type(**kwargs)
         return self.__spawn_worker
 
     @property
     def producer(self) -> IProducer:
         if self.__producer is None:
-            self.__producer = self.__producer_type(
-                self,
-                **(self.__producer_init_kwargs or {}),
-            )
+            kwargs = self.__producer_init_kwargs or {}
+            kwargs.setdefault("ecore", self)
+            kwargs.setdefault("logger", self.__logger)
+            self.__producer = self.__producer_type(**kwargs)
         return self.__producer
 
     @property

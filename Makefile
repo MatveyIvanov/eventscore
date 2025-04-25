@@ -9,7 +9,7 @@ e2etest:
 lint:
 	poetry run flake8 .
 	poetry run ruff check
-typecheck:
+analyze:
 	poetry run mypy .
 	poetry run pyright .
 format:
@@ -21,16 +21,25 @@ sort:
 	poetry run isort --profile black --filter-files $(OPTS) .
 sortcheck:
 	$(MAKE) OPTS=--check sort
+tox:
+	poetry run tox
 install-git-hooks:
 	poetry run pre-commit install --hook-type pre-commit
 uninstall-git-hooks:
 	poetry run pre-commit uninstall -t pre-commit
-docsbuild:
+docs:
 	cd docs \
-		&& sphinx-apidoc -f -o ../docs/source/ ../eventscore \
-		&& $(MAKE) html
+		&& poetry run sphinx-apidoc -f -o ../docs/source/ ../eventscore \
+		&& poetry run $(MAKE) html
 update-examples:
 	cp -r eventscore examples/django/src/
+	cp -r eventscore examples/fastapi/src/
+
 django-example:
 	$(MAKE) update-examples
 	docker compose -f examples/django/docker/docker-compose.yml up $(OPTS)
+
+fastapi-example:
+	$(MAKE) update-examples
+	docker compose -f examples/fastapi/docker/docker-compose.yml up $(OPTS)
+

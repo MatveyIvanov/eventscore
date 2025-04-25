@@ -115,7 +115,7 @@ def threading_mock(threading_thread_mock):
 @pytest.fixture
 def redis_mock():
     redis = mock.Mock()
-    redis.Redis.return_value = redis
+    redis.return_value = redis
     redis.xread.return_value = [
         (
             b"event",
@@ -147,8 +147,22 @@ def spawn_mp_worker():
 
 @pytest.fixture
 def observer_runner_factory(stream_mock):
-    def factory(event, max_events, *consumers):
-        return ObserverRunner(stream_mock, event, max_events, *consumers)
+    def factory(
+        event,
+        *consumers,
+        max_events=-1,
+        logger=SKIP,
+    ):
+        kwargs = {"max_events": max_events}
+        if logger != SKIP:
+            kwargs["logger"] = logger
+        print(consumers)
+        return ObserverRunner(
+            stream_mock,
+            event,
+            *consumers,
+            **kwargs,
+        )
 
     return factory
 
@@ -190,6 +204,7 @@ def ecore_factory(stream_mock, process_pipeline_mock, spawn_worker_mock, produce
         producer=producer_mock,
         producer_type=Producer,
         producer_init_kwargs=None,
+        logger=SKIP,
         kwdefaults_overrides=None,
     ):
         kwargs = {}
@@ -213,6 +228,8 @@ def ecore_factory(stream_mock, process_pipeline_mock, spawn_worker_mock, produce
             kwargs["producer_type"] = producer_type
         if producer_init_kwargs != SKIP:
             kwargs["producer_init_kwargs"] = producer_init_kwargs
+        if logger != SKIP:
+            kwargs["logger"] = logger
 
         if kwdefaults_overrides:
             kwdefaults = ECore.__init__.__kwdefaults__
@@ -235,8 +252,25 @@ def event_serializer_mock():
 
 
 @pytest.fixture
-def redis_stream_factory(event_serializer_mock):
-    def factory():
-        return RedisStream("redis", 6379, 0, event_serializer_mock)
+def redis_stream_factory(redis_mock, event_serializer_mock):
+    def factory(
+        redis=redis_mock,
+        host="redis",
+        port=6379,
+        db=0,
+        redis_init_kwargs=None,
+    ):
+        kwargs = {}
+        if redis != SKIP:
+            kwargs["redis"] = redis
+        if host != SKIP:
+            kwargs["host"] = host
+        if port != SKIP:
+            kwargs["port"] = port
+        if db != SKIP:
+            kwargs["db"] = db
+        if redis_init_kwargs != SKIP:
+            kwargs["redis_init_kwargs"] = redis_init_kwargs
+        return RedisStream(serializer=event_serializer_mock, **kwargs)
 
     return factory

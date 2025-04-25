@@ -18,6 +18,10 @@ class UnrelatedConsumersError(EventsCoreError):
     message = "All consumers in pipeline must be related to the same event."
 
 
+class EventNotSentError(EventsCoreError):
+    message = "Could not send message to stream due to an unexpected error."
+
+
 class EmptyStreamError(EventsCoreError):
     message = "Stream does not have unprocessed messages."
 

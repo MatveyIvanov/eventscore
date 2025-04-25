@@ -39,8 +39,15 @@ highly appreciated and useful to the project.
 
 To get started with developing `eventscore`, see [CONTRIBUTING.md](CONTRIBUTING.md).
 
-Stable release roadmap
-----------------------------------
+First (0.1.0) release roadmap
+-----------------------------
+* 90%+ unit-test coverage
+* e2e tests with basic flows
+* CI for PRs, main and release branches
+* CD for release branches
+
+Stable (1.0.0) release roadmap
+------------------------------
 
 * 100% unit-test coverage
 * integration tests for threading and multiprocessing

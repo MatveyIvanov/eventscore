@@ -1,8 +1,9 @@
+import logging
 import threading
 
 from eventscore.core.abstract import EventType, IConsumer, IRunner, IStream
 from eventscore.core.exceptions import EmptyStreamError
-from eventscore.core.logging import logger
+from eventscore.core.logging import logger as _logger
 
 
 class ObserverRunner(IRunner):
@@ -10,8 +11,9 @@ class ObserverRunner(IRunner):
         self,
         stream: IStream,
         event: EventType,
-        max_events: int = -1,
         *consumers: IConsumer,
+        max_events: int = -1,
+        logger: logging.Logger = _logger,
     ) -> None:
         self.__stream = stream
         self.__event = event
@@ -37,7 +39,6 @@ class ObserverRunner(IRunner):
                 for consumer in self.__consumers
             )
             for task in tasks:
-                print(task, threading)
                 task.start()
                 self.__logger.debug(f"Consumer thread {task.ident} has started.")
 

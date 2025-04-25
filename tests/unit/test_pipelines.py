@@ -7,6 +7,7 @@ from eventscore.core.exceptions import (
     EmptyPipelineError,
     UnrelatedConsumersError,
 )
+from eventscore.core.logging import logger as _logger
 from eventscore.core.types import PipelineItem, Worker
 
 
@@ -86,9 +87,12 @@ class TestProcessPipeline:
             assert result.name == str(pipeline.uid)
             assert result.clones == expected_clones
             assert result.runner == runner_mock.return_value
-            consumer_mock.assert_has_calls([mock.call(item.func) for item in items])
+            consumer_mock.assert_has_calls(
+                [mock.call(item.func, logger=_logger) for item in items]
+            )
             runner_mock.assert_called_once_with(
                 ecore_mock.stream,
                 expected_event,
                 *[consumer_mock.return_value for _ in items],
+                logger=_logger,
             )

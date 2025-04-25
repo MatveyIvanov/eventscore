@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import logging
+
 from eventscore.core.abstract import (
     EventType,
     IConsumer,
@@ -13,7 +15,7 @@ from eventscore.core.exceptions import (
     EmptyPipelineError,
     UnrelatedConsumersError,
 )
-from eventscore.core.logging import logger
+from eventscore.core.logging import logger as _logger
 from eventscore.core.runners import ObserverRunner
 from eventscore.core.types import Pipeline, PipelineItem
 from eventscore.core.workers import Worker
@@ -24,6 +26,7 @@ class ProcessPipeline(IProcessPipeline):
         self,
         consumer_type: type[IConsumer] = Consumer,
         runner_type: type[IRunner] = ObserverRunner,
+        logger: logging.Logger = _logger,
     ) -> None:
         self.__consumer_type = consumer_type
         self.__runner_type = runner_type
@@ -61,7 +64,7 @@ class ProcessPipeline(IProcessPipeline):
     def __make_consumers(self, items: set[PipelineItem]) -> list[IConsumer]:
         result: list[IConsumer] = []
         for item in items:
-            result.append(self.__consumer_type(item.func))
+            result.append(self.__consumer_type(item.func, logger=self.__logger))
 
         return result
 
@@ -71,4 +74,9 @@ class ProcessPipeline(IProcessPipeline):
         ecore: IECore,
         event: EventType,
     ) -> IRunner:
-        return self.__runner_type(ecore.stream, event, *consumers)
+        return self.__runner_type(
+            ecore.stream,
+            event,
+            *consumers,
+            logger=self.__logger,
+        )
