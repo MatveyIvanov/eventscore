@@ -1,10 +1,18 @@
 import logging
+import multiprocessing as mp
 from collections import defaultdict
-from typing import Any, TypeAlias
+from collections.abc import Iterator
+from contextlib import contextmanager
+from typing import TYPE_CHECKING, Any, TypeAlias
+
+if TYPE_CHECKING:
+    from multiprocessing.synchronize import (
+        _LockLike,  # pyright:ignore[reportPrivateUsage]
+    )
 
 from redis import Redis
 
-from eventscore.core.abstract import EventType, IEventSerializer, IStream
+from eventscore.core.abstract import ConsumerGroup, EventType, IEventSerializer, IStream
 from eventscore.core.exceptions import EmptyStreamError, TooManyDataError
 from eventscore.core.logging import logger as _logger
 from eventscore.core.types import Event
@@ -52,7 +60,12 @@ class RedisStream(IStream):
         )
         self.__redis = redis or Redis(**redis_init_kwargs)
         self.__serializer = serializer
-        self.__event_to_latest_id: dict[EventType, str] = defaultdict(lambda: "0")
+        self.__event_n_group_to_latest_id: dict[
+            tuple[EventType, ConsumerGroup], str
+        ] = defaultdict(lambda: "0")
+        self.__event_n_group_to_lock: dict[
+            tuple[EventType, ConsumerGroup], _LockLike
+        ] = defaultdict(lambda: mp.Lock())
         self.__logger = logger
 
     def put(
@@ -65,39 +78,56 @@ class RedisStream(IStream):
         _ = self.__redis.xadd(
             name=str(event.type),
             fields={"value": self.__serializer.encode(event)},
-            # id=str(event.uid),
         )
         self.__logger.debug(f"XADDed event {event}.")
 
     def pop(
         self,
         event: EventType,
+        group: ConsumerGroup,
         *,
         block: bool = True,
         timeout: int = 5,
     ) -> Event:
-        xresult: XReadT = self.__redis.xread(
-            streams={event: self.__event_to_latest_id[event]},  # type: ignore
-            count=1,
-            block=timeout * 1000 if block else None,
+        self.__logger.debug(
+            f"About to xread an event. Stream {id(self)}, "
+            + f"latest ID {self.__event_n_group_to_latest_id[(event, group)]}."
         )
-        self.__logger.debug(f"XREADed {xresult}.")
-        if not xresult:
-            raise EmptyStreamError
+        with self.__lock(event, group):
+            xresult: XReadT = self.__redis.xread(
+                streams={
+                    str(event): self.__event_n_group_to_latest_id[
+                        (event, group)
+                    ]  # type:ignore # noqa:E501
+                },
+                count=1,
+                block=timeout * 1000 if block else None,
+            )
+            self.__logger.debug(f"XREADed {xresult}.")
+            if not xresult:
+                raise EmptyStreamError
 
-        item = xresult[0]
-        if not item:
-            raise EmptyStreamError
+            item = xresult[0]
+            if not item:
+                raise EmptyStreamError
 
-        name, data = item
-        if not data:
-            raise EmptyStreamError
-        if len(data) > 1:
-            raise TooManyDataError
+            name, data = item
+            if not data:
+                raise EmptyStreamError
+            if len(data) > 1:
+                raise TooManyDataError
 
-        uid, payload = data[0]
+            uid, payload = data[0]
+            self.__event_n_group_to_latest_id[(event, group)] = uid.decode()
+
         bevent = payload[b"value"]
-
         self.__logger.debug(f"Got valid event {name.decode()} with id {uid.decode()}.")
-        self.__event_to_latest_id[event] = uid.decode()
         return self.__serializer.decode(bevent)
+
+    @contextmanager
+    def __lock(self, event: EventType, group: ConsumerGroup) -> Iterator[None]:
+        _ = self.__event_n_group_to_lock[(event, group)].acquire()
+        try:
+            yield
+        finally:
+            self.__event_n_group_to_lock[(event, group)].release()

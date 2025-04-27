@@ -13,7 +13,7 @@ def consumer(
     clones: int = 1,
 ) -> ConsumerFunc:
     def decorator(func: ConsumerFunc) -> ConsumerFunc:
-        ecore.register_consumer(func, event, group, clones)
+        ecore.register_consumer(func, event, group, clones=clones)
 
         setattr(func, "__is_consumer__", True)
         setattr(func, "__consumer_event__", event)

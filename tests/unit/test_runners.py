@@ -35,9 +35,19 @@ class TestObserverRunner:
     def test_init(self, max_events, consumers, expect_error, observer_runner_factory):
         if expect_error:
             with pytest.raises(AssertionError):
-                observer_runner_factory("event", *consumers, max_events=max_events)
+                observer_runner_factory(
+                    "event",
+                    "group",
+                    *consumers,
+                    max_events=max_events,
+                )
         else:
-            observer_runner_factory("event", *consumers, max_events=max_events)
+            observer_runner_factory(
+                "event",
+                "group",
+                *consumers,
+                max_events=max_events,
+            )
 
     @pytest.mark.parametrize(
         "events,max_events,expected_events_to_process",
@@ -109,7 +119,10 @@ class TestObserverRunner:
             expected_start_calls,
             expected_join_calls,
         ) = (
-            [mock.call("event", block=True) for _ in range(expected_events_to_process)],
+            [
+                mock.call("event", "group", block=True)
+                for _ in range(expected_events_to_process)
+            ],
             [],
             [],
             [],
@@ -132,7 +145,12 @@ class TestObserverRunner:
                 expected_thread_calls.append(mock.call().join())
 
         with mock.patch("eventscore.core.runners.threading", threading_mock):
-            observer_runner_factory("event", *consumers, max_events=max_events).run()
+            observer_runner_factory(
+                "event",
+                "group",
+                *consumers,
+                max_events=max_events,
+            ).run()
 
         stream_mock.pop.assert_has_calls(expected_stream_pop_calls)
         threading_mock.Thread.assert_has_calls(expected_thread_calls)

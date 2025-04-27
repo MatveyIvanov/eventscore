@@ -14,5 +14,7 @@ stream = RedisStream(
 )
 
 ecore = ECore(stream=stream)
+# One way of registering consumers,
+# no explicit registering required
 ecore.discover_consumers()
 ecore.spawn_workers()

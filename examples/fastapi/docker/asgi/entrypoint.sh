@@ -10,5 +10,4 @@ set -o pipefail
 set -o nounset
 
 echo "[RUN SERVER]"
-uvicorn main:app --host 0.0.0.0 --port $ASGI_PORT --reload
-
+python main.py

@@ -14,6 +14,10 @@ EventType: TypeAlias = str | StrEnum | IntEnum
 ConsumerFunc: TypeAlias = Callable[[Event], Any]
 # Type alias for user-defined consumer group
 ConsumerGroup: TypeAlias = str | StrEnum | IntEnum
+# Type alias for number of clones
+NumberOfClones: TypeAlias = int
+# Type alias for path to consumer function's module
+FunctionModulePath: TypeAlias = str
 
 # Type variable for serializer input
 IType = TypeVar("IType", contravariant=True)
@@ -84,7 +88,7 @@ class IECore(Protocol):
         *,
         event: EventType,
         group: ConsumerGroup,
-        clones: int = 1,
+        clones: NumberOfClones = 1,
     ) -> ConsumerFunc:
         """
         Decorator for consumer functions
@@ -96,7 +100,7 @@ class IECore(Protocol):
         :param group: Consumer group
         :type group: ConsumerGroup
         :param clones: No of clones
-        :type clones: int
+        :type clones: NumberOfClones
         :return: Decorated function
         :rtype: ConsumerFunc
         """
@@ -107,7 +111,9 @@ class IECore(Protocol):
         func: ConsumerFunc,
         event: EventType,
         group: ConsumerGroup,
-        clones: int = 1,
+        *,
+        clones: NumberOfClones = 1,
+        func_path: str | None = None,
     ) -> None:
         """
         Consumer function registrator
@@ -119,7 +125,16 @@ class IECore(Protocol):
         :param group: Consumer group
         :type group: ConsumerGroup
         :param clones: No of clones
-        :type clones: int
+        :type clones: NumberOfClones
+        :param func_path: Path (absolute preferred)
+            to module where function is defined.
+            Is used for consumer functions equality check
+            to avoid duplicate registering.
+            Defaults to
+            ```
+            (inspect.getsourcefile(func) or "") + ":" + func.__name__
+            ```
+        :type func_path: str | None
         :return: None
         :rtype: None
         """
@@ -310,6 +325,7 @@ class IStream(Protocol):
     def pop(
         self,
         event: EventType,
+        group: ConsumerGroup,
         *,
         block: bool = True,
         timeout: int = 5,
@@ -357,6 +373,7 @@ class IRunner(Protocol):
         self,
         stream: IStream,
         event: EventType,
+        group: ConsumerGroup,
         *consumers: IConsumer,
         max_events: int = -1,
         logger: logging.Logger = _logger,

@@ -52,18 +52,6 @@ COPY ./src/ ./
 # Ready to use images from now on
 # ***********************************************************
 
-
-# -----------------------------------------------------------
-# ASGI started with uvicorn --reload
-# -----------------------------------------------------------
-FROM base AS runserver-asgi
-
-WORKDIR /apps/
-
-COPY ./docker/asgi/entrypoint.uvicorn.local.sh /entrypoint.sh
-
-ENTRYPOINT ["bash", "/entrypoint.sh"]
-
 # -----------------------------------------------------------
 # ASGI started with uvicorn
 # -----------------------------------------------------------
@@ -71,6 +59,6 @@ FROM base AS uvicorn-asgi
 
 WORKDIR /apps/
 
-COPY ./docker/asgi/entrypoint.uvicorn.sh /entrypoint.sh
+COPY ./docker/asgi/entrypoint.sh /entrypoint.sh
 
 ENTRYPOINT ["bash", "/entrypoint.sh"]

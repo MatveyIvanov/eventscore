@@ -53,7 +53,9 @@ class Event:
     type: EventType
     uid: uuid.UUID = field(default_factory=uuid.uuid4)
     ts: str = field(default_factory=lambda: str(time()))
-    payload: dict[str, EncodableT] = field(default_factory=dict)  # pyright:ignore[reportUnknownVariableType]  # noqa:E501
+    payload: dict[str, EncodableT] = field(  # pyright:ignore[reportUnknownVariableType]
+        default_factory=dict
+    )
 
     def asdict(self) -> EventDict:
         """
@@ -111,6 +113,7 @@ class PipelineItem:
     """
 
     func: ConsumerFunc
+    func_path: str
     event: EventType
     group: ConsumerGroup = DEFAULT_CONSUMER_GROUP
     clones: int = 1
@@ -118,6 +121,7 @@ class PipelineItem:
     def __eq__(self, other: PipelineItem) -> bool:  # type:ignore[override]
         """
         Equality operator for pipeline items.
+        Must use same attributes as __hash__ method.
 
         :param other: other pipeline item
         :type other: PipelineItem
@@ -126,9 +130,20 @@ class PipelineItem:
         """
         return (
             self.func == other.func
+            and self.func_path == other.func_path
             and self.event == other.event
             and self.group == other.group
         )
+
+    def __hash__(self) -> int:
+        """
+        Hash function for pipeline item.
+        Must use same attributes as __eq__ method.
+
+        Returns:
+            int: hash value
+        """
+        return hash((self.func, self.func_path, self.event, self.group))
 
 
 @dataclass(frozen=True, slots=True)
@@ -143,7 +158,9 @@ class Pipeline:
     """
 
     uid: uuid.UUID = field(default_factory=uuid.uuid4)
-    items: set[PipelineItem] = field(default_factory=set)  # pyright:ignore[reportUnknownVariableType]  # noqa:E501
+    items: set[PipelineItem] = field(  # pyright:ignore[reportUnknownVariableType]
+        default_factory=set
+    )
 
 
 @dataclass(frozen=True, slots=True)

@@ -14,5 +14,3 @@ stream = RedisStream(
 )
 
 ecore = ECore(stream=stream)
-ecore.discover_consumers()
-ecore.spawn_workers()

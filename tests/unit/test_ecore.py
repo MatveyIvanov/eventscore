@@ -1,3 +1,5 @@
+import functools
+import inspect
 from collections import defaultdict
 from unittest import mock
 
@@ -7,6 +9,28 @@ from eventscore.core.exceptions import AlreadySpawnedError
 from eventscore.core.logging import logger as _logger
 from eventscore.core.types import Event, Pipeline, PipelineItem
 from tests.unit.conftest import SKIP
+
+
+def consumer_decorator(func):
+    def decorator(func):
+        @functools.wraps(func)
+        def wrapper(*args, **kwargs):
+            return func(*args, **kwargs)
+
+        return wrapper
+
+    if func is None:
+        return decorator
+    return decorator(func)
+
+
+def consumer_func():
+    pass
+
+
+@consumer_decorator
+def wrapped_consumer_func():
+    pass
 
 
 @pytest.mark.unit
@@ -196,21 +220,33 @@ class TestECore:
         ((False, None), (True, AlreadySpawnedError)),
         ids=("already-spawned", "not-spawned"),
     )
-    @pytest.mark.parametrize("func", (mock.Mock(),), ids=("func",))
+    @pytest.mark.parametrize(
+        "func,expected_func",
+        (
+            (consumer_func, consumer_func),
+            (wrapped_consumer_func, wrapped_consumer_func.__wrapped__),
+        ),
+        ids=("func", "wrapped_func"),
+    )
     @pytest.mark.parametrize("event", ("event",), ids=("event",))
     @pytest.mark.parametrize("group", ("group",), ids=("group",))
     @pytest.mark.parametrize("clones", (SKIP, 2), ids=("default-clones", "two-clones"))
+    @pytest.mark.parametrize("func_path", (SKIP, None, "", "path"))
     def test_register_consumer(
         self,
         already_spawned,
         expected_error,
         func,
+        expected_func,
         event,
         group,
         clones,
+        func_path,
         ecore_factory,
     ):
-        func.__name__ = "name"
+        expected_func_path = (
+            func_path or inspect.getsourcefile(func) + ":" + func.__name__
+        )
         kwargs = dict(
             func=func,
             event=event,
@@ -218,6 +254,8 @@ class TestECore:
         )
         if clones != SKIP:
             kwargs["clones"] = clones
+        if func_path != SKIP:
+            kwargs["func_path"] = func_path
 
         ecore = ecore_factory()
         if already_spawned:
@@ -248,7 +286,8 @@ class TestECore:
                         uid=pipelines[group].uid,
                         items={
                             PipelineItem(
-                                func=func,
+                                func=expected_func,
+                                func_path=expected_func_path,
                                 event=event,
                                 group=group,
                                 clones=clones if clones != SKIP else 1,
@@ -296,7 +335,14 @@ class TestECore:
             {},
             {
                 "group": Pipeline(
-                    items={PipelineItem(func=mock.Mock(), event="event", group="group")}
+                    items={
+                        PipelineItem(
+                            func=mock.Mock(),
+                            func_path="path",
+                            event="event",
+                            group="group",
+                        )
+                    }
                 )
             },
         ),

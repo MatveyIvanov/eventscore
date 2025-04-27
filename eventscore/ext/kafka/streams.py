@@ -1,26 +1,27 @@
 from typing import Any, TypeAlias
 
-from kafka import KafkaConsumer, KafkaProducer
-from kafka.errors import KafkaTimeoutError
+from kafka import KafkaConsumer, KafkaProducer  # type:ignore[import-untyped]
+from kafka.errors import KafkaTimeoutError  # type:ignore[import-untyped]
+from kafka.producer.future import FutureRecordMetadata  # type:ignore[import-untyped]
 
-from eventscore.core.abstract import EventType, IEventSerializer, IStream
+from eventscore.core.abstract import ConsumerGroup, EventType, IEventSerializer, IStream
 from eventscore.core.exceptions import (
     EmptyStreamError,
     EventNotSentError,
     TooManyDataError,
 )
-from eventscore.core.types import Event
+from eventscore.core.types import Event, EventDict
 
-PollResult: TypeAlias = dict[str, list[dict[str, Any]]]
+PollResult: TypeAlias = dict[str, list[EventDict]]
 
 
 class KafkaStream(IStream):
     def __init__(
         self,
-        serializer: IEventSerializer[dict, bytes],
+        serializer: IEventSerializer[EventDict, bytes],
     ) -> None:
         self.__serializer = serializer
-        configs = {}
+        configs: dict[str, Any] = {}
         self.__producer = KafkaProducer(**configs)
         self.__consumer = KafkaConsumer(**configs)
         self.__consumer_subscription: EventType | None = None
@@ -32,37 +33,44 @@ class KafkaStream(IStream):
         block: bool = True,
         timeout: int = 5,
     ) -> None:
-        record = self.__producer.send(
-            topic=str(event),
-            value=self.__serializer.encode(event),
+        record: FutureRecordMetadata = (  # type:ignore
+            self.__producer.send(  # pyright:ignore[reportUnknownMemberType]
+                topic=str(event),
+                value=self.__serializer.encode(event),
+            )
         )
         if not block:
             return
 
         try:
-            record.get(timeout)
+            _ = record.get(  # pyright:ignore[reportUnknownMemberType,reportUnknownVariableType]  # noqa:E501
+                timeout
+            )
         except KafkaTimeoutError as exc:
             raise EventNotSentError from exc
 
     def pop(
         self,
         event: EventType,
+        group: ConsumerGroup,
         *,
         block: bool = True,
         timeout: int = 5,
     ) -> Event:
         self.__single_consumer_subscription_lock(event)
-        record: PollResult = self.__consumer.poll(
-            timeout * 1000 if block else 0,
-            max_records=1,
-            update_offsets=True,
+        record: PollResult = (  # pyright:ignore[reportUnknownVariableType]
+            self.__consumer.poll(  # pyright:ignore[reportUnknownMemberType]
+                timeout * 1000 if block else 0,
+                max_records=1,
+                update_offsets=True,
+            )
         )
-        if event not in record or not record[event]:
+        if event not in record or not record[str(event)]:
             raise EmptyStreamError
-        if len(record[event]) > 1:
+        if len(record[str(event)]) > 1:
             raise TooManyDataError
 
-        data = record[event][0]
+        data = record[str(event)][0]
         return self.__serializer.decode(data)
 
     def __single_consumer_subscription_lock(self, event: EventType) -> None:
@@ -72,4 +80,6 @@ class KafkaStream(IStream):
             self.__consumer.unsubscribe()
 
         self.__consumer_subscription = event
-        self.__consumer.subscribe(topics=[str(event)])
+        self.__consumer.subscribe(  # pyright:ignore[reportUnknownMemberType]
+            topics=[str(event)]
+        )

@@ -10,11 +10,13 @@ from eventscore.core.abstract import (
     ConsumerFunc,
     ConsumerGroup,
     EventType,
+    FunctionModulePath,
     IECore,
     IProcessPipeline,
     IProducer,
     ISpawnWorker,
     IStream,
+    NumberOfClones,
 )
 from eventscore.core.exceptions import AlreadySpawnedError
 from eventscore.core.logging import logger as _logger
@@ -25,7 +27,13 @@ from eventscore.core.workers import SpawnMPWorker, Worker
 from eventscore.decorators import consumer as _consumer
 
 FoundConsumerFunctions: TypeAlias = list[
-    tuple[ConsumerFunc, EventType, ConsumerGroup, int]
+    tuple[
+        ConsumerFunc,
+        EventType,
+        ConsumerGroup,
+        NumberOfClones,
+        FunctionModulePath,
+    ]
 ]
 
 
@@ -156,14 +164,28 @@ class ECore(IECore):
         func: ConsumerFunc,
         event: EventType,
         group: ConsumerGroup,
+        *,
         clones: int = 1,
+        func_path: str | None = None,
     ) -> None:
         if self.__workers_spawned:
             self.__logger.error("Consumer registration attempt after spawning.")
             raise AlreadySpawnedError
+        # NOTE: consumer discovering returns unwrapped consumers,
+        # but in the process also imports wrapped consumers.
+        # While they are same in terms of consumer function,
+        # they are still different in terms of python objects.
+        # To avoid consumers duplication, we only add unwrapped versions
+        # of found consumers, i.e. taking original function without decorator.
+        # This is fine as far as consumer decorator only registers consumer
+        # and not doing some runtime extra logic.
+        func = getattr(func, "__wrapped__", func)
+
         self.__pipelines[group].items.add(
             PipelineItem(
                 func=func,
+                func_path=func_path
+                or ((inspect.getsourcefile(func) or "") + ":" + func.__name__),
                 event=event,
                 group=group,
                 clones=clones,
@@ -217,6 +239,7 @@ class ECore(IECore):
                         obj.__consumer_event__,  # type: ignore
                         obj.__consumer_group__,  # type: ignore
                         obj.__consumer_clones__,  # type: ignore
+                        path,  # pyright:ignore[reportArgumentType]
                     )
                 )
                 self.__logger.debug(
@@ -253,13 +276,19 @@ class ECore(IECore):
             self.__logger.debug(
                 f"Discover in package {path} ended. "
                 + "Found consumers:\n\n"
-                + f"{__newline.join(f'{func, event, group, clones}' for func, event, group, clones in result)}\n"  # noqa:E501
+                + f"{__newline.join(f'{func, event, group, clones, func_path}' for func, event, group, clones, func_path in result)}\n"  # noqa:E501
             )
 
             return result
 
-        for func, event, group, clones in discover_in_package(path):
-            self.register_consumer(func, event, group, clones)
+        for func, event, group, clones, func_path in discover_in_package(path):
+            self.register_consumer(
+                func,
+                event,
+                group,
+                clones=clones,
+                func_path=func_path,
+            )
 
         self.__logger.debug("Consumer discovering ended.")
 

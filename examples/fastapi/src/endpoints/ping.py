@@ -3,10 +3,10 @@ from fastapi.routing import APIRouter
 
 from eventscore.core.types import Event
 
-router = APIRouter(prefix="/ping", tags=["ping"])
+router = APIRouter(prefix="/api/v0", tags=["ping"])
 
 
-@router.get("/")
+@router.get("/ping/")
 async def ping():
     ecore.produce(event=Event(type="ping", payload={"some": "value"}))
     return {"detail": "OK"}

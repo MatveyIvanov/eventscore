@@ -36,7 +36,7 @@ def test_consumer_decorator(func, ecore_mock, consumer_func_mock):
         consumer_func_mock,
         "event",
         "group",
-        1,
+        clones=1,
     )
 
     args, kwargs = (1,), {"field": "value"}

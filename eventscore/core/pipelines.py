@@ -3,6 +3,7 @@ from __future__ import annotations
 import logging
 
 from eventscore.core.abstract import (
+    ConsumerGroup,
     EventType,
     IConsumer,
     IECore,
@@ -33,13 +34,13 @@ class ProcessPipeline(IProcessPipeline):
         self.__logger = logger
 
     def __call__(self, pipeline: Pipeline, ecore: IECore) -> Worker:
-        event, clones = self.__validate_pipeline(pipeline)
+        event, group, clones = self.__validate_pipeline(pipeline)
         self.__logger.debug(
             f"Received valid pipeline {pipeline}. Event: {event}. Clones: {clones}"
         )
         consumers = self.__make_consumers(pipeline.items)
         self.__logger.debug(f"Built consumers: {consumers}")
-        runner = self.__make_runner(consumers, ecore, event)
+        runner = self.__make_runner(consumers, ecore, event, group)
         self.__logger.debug(f"Built runner: {runner}")
         return Worker(
             uid=pipeline.uid,
@@ -48,7 +49,10 @@ class ProcessPipeline(IProcessPipeline):
             runner=runner,
         )
 
-    def __validate_pipeline(self, pipeline: Pipeline) -> tuple[EventType, int]:
+    def __validate_pipeline(
+        self,
+        pipeline: Pipeline,
+    ) -> tuple[EventType, ConsumerGroup, int]:
         if len(pipeline.items) == 0:
             raise EmptyPipelineError
 
@@ -59,7 +63,11 @@ class ProcessPipeline(IProcessPipeline):
         if (len(events_unique)) > 1:
             raise UnrelatedConsumersError
 
-        return events_unique.pop(), clones_unique.pop()
+        return (
+            events_unique.pop(),
+            next(iter(pipeline.items)).group,
+            clones_unique.pop(),
+        )
 
     def __make_consumers(self, items: set[PipelineItem]) -> list[IConsumer]:
         result: list[IConsumer] = []
@@ -73,10 +81,12 @@ class ProcessPipeline(IProcessPipeline):
         consumers: list[IConsumer],
         ecore: IECore,
         event: EventType,
+        group: ConsumerGroup,
     ) -> IRunner:
         return self.__runner_type(
             ecore.stream,
             event,
+            group,
             *consumers,
             logger=self.__logger,
         )

@@ -94,9 +94,15 @@ def mp_process_mock():
 
 
 @pytest.fixture
-def mp_mock(mp_process_mock):
+def mp_lock_mock():
+    return mock.Mock()
+
+
+@pytest.fixture
+def mp_mock(mp_process_mock, mp_lock_mock):
     mp = mock.Mock()
     mp.Process.return_value = mp_process_mock
+    mp.Lock.return_value = mp_lock_mock
     return mp
 
 
@@ -149,6 +155,7 @@ def spawn_mp_worker():
 def observer_runner_factory(stream_mock):
     def factory(
         event,
+        group,
         *consumers,
         max_events=-1,
         logger=SKIP,
@@ -156,10 +163,10 @@ def observer_runner_factory(stream_mock):
         kwargs = {"max_events": max_events}
         if logger != SKIP:
             kwargs["logger"] = logger
-        print(consumers)
         return ObserverRunner(
             stream_mock,
             event,
+            group,
             *consumers,
             **kwargs,
         )

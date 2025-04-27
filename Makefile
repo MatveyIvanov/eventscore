@@ -14,7 +14,7 @@ analyze:
 	poetry run pyright .
 format:
 	poetry run black $(OPTS) .
-	poetry run ruff format $(OPTS)
+	# poetry run ruff format $(OPTS)
 formatcheck:
 	$(MAKE) OPTS=--check format
 sort:
@@ -34,11 +34,9 @@ docs:
 update-examples:
 	cp -r eventscore examples/django/src/
 	cp -r eventscore examples/fastapi/src/
-
 django-example:
 	$(MAKE) update-examples
 	docker compose -f examples/django/docker/docker-compose.yml up $(OPTS)
-
 fastapi-example:
 	$(MAKE) update-examples
 	docker compose -f examples/fastapi/docker/docker-compose.yml up $(OPTS)

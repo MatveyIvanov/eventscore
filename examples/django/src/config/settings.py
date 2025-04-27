@@ -118,3 +118,10 @@ REST_FRAMEWORK = {
     ],
     "DEFAULT_AUTHENTICATION_CLASSES": [],
 }
+
+# Explicit importing, so @consumer decorator
+# can registern consumer before spawning
+from config.ecore import ecore  # noqa:E402
+from pong.consumers import pong  # noqa:F401,E402
+
+ecore.spawn_workers()

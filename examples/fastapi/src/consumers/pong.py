@@ -5,4 +5,4 @@ from eventscore.core.types import Event
 
 @ecore.consumer(event="ping", group="medium", clones=1)
 def pong(event: Event) -> None:
-    print(event)
+    print("FastAPI ponged: ", event)

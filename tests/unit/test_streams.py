@@ -174,6 +174,8 @@ class TestRedisStream:
         event_serializer_mock,
         redis_stream_factory,
         redis_mock,
+        mp_mock,
+        mp_lock_mock,
     ):
         redis_mock.xread.return_value = xread
         kwargs = {}
@@ -182,17 +184,26 @@ class TestRedisStream:
         if timeout != SKIP:
             kwargs["timeout"] = timeout
 
-        with mock.patch("eventscore.ext.redis.streams.Redis", redis_mock):
+        with (
+            mock.patch("eventscore.ext.redis.streams.Redis", redis_mock),
+            mock.patch("eventscore.ext.redis.streams.mp", mp_mock),
+        ):
             stream = redis_stream_factory()
 
-            assert getattr(stream, "_RedisStream__event_to_latest_id")["event"] == "0"
+            assert (
+                getattr(stream, "_RedisStream__event_n_group_to_latest_id")["event"]
+                == "0"
+            )
 
             if expected_error is not None:
                 with pytest.raises(expected_error):
-                    stream.pop("event", **kwargs)
+                    stream.pop("event", "group", **kwargs)
 
                 assert (
-                    getattr(stream, "_RedisStream__event_to_latest_id")["event"] == "0"
+                    getattr(stream, "_RedisStream__event_n_group_to_latest_id")[
+                        ("event", "group")
+                    ]
+                    == "0"
                 )
                 redis_mock.assert_has_calls(
                     [
@@ -204,12 +215,17 @@ class TestRedisStream:
                     ]
                 )
                 event_serializer_mock.decode.assert_not_called()
+                mp_mock.Lock.assert_called_once_with()
+                mp_lock_mock.acquire.assert_called_once_with()
+                mp_lock_mock.release.assert_called_once_with()
             else:
-                event = stream.pop("event", **kwargs)
+                event = stream.pop("event", "group", **kwargs)
 
                 assert event == event_serializer_mock.decode.return_value
                 assert (
-                    getattr(stream, "_RedisStream__event_to_latest_id")["event"]
+                    getattr(stream, "_RedisStream__event_n_group_to_latest_id")[
+                        ("event", "group")
+                    ]
                     == "uid"
                 )
                 redis_mock.assert_has_calls(
@@ -222,3 +238,6 @@ class TestRedisStream:
                     ]
                 )
                 event_serializer_mock.decode.assert_called_once_with(b"data")
+                mp_mock.Lock.assert_called_once_with()
+                mp_lock_mock.acquire.assert_called_once_with()
+                mp_lock_mock.release.assert_called_once_with()

@@ -43,6 +43,7 @@ First (0.1.0) release roadmap
 -----------------------------
 * 90%+ unit-test coverage
 * e2e tests with basic flows
+* integration tests for consumer discovering, threading, multiprocessing and redis stream
 * CI for PRs, main and release branches
 * CD for release branches
 
@@ -58,4 +59,5 @@ Stable (1.0.0) release roadmap
 * at least once semantic support
 * at most once semantic support
 * stress-tests, with/without eventscore performance comparison
+* multiple event types per consumer group
 * 

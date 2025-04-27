@@ -14,41 +14,89 @@ from eventscore.core.types import PipelineItem, Worker
 @pytest.mark.unit
 class TestProcessPipeline:
     @pytest.mark.parametrize(
-        "items,expected_error,expected_clones,expected_event",
+        "items,expected_error,expected_clones,expected_event,expected_group",
         (
-            ([], EmptyPipelineError, None, None),
+            ([], EmptyPipelineError, None, None, None),
             (
                 [
-                    PipelineItem(func=int, event="event", group="group", clones=1),
-                    PipelineItem(func=int, event="event", group="group", clones=2),
+                    PipelineItem(
+                        func=int,
+                        func_path="path",
+                        event="event",
+                        group="group",
+                        clones=1,
+                    ),
+                    PipelineItem(
+                        func=int,
+                        func_path="path",
+                        event="event",
+                        group="group",
+                        clones=2,
+                    ),
                 ],
                 ClonesMismatchError,
                 None,
                 None,
+                None,
             ),
             (
                 [
-                    PipelineItem(func=int, event="event1", group="group", clones=1),
-                    PipelineItem(func=int, event="event2", group="group", clones=1),
+                    PipelineItem(
+                        func=int,
+                        func_path="path",
+                        event="event1",
+                        group="group",
+                        clones=1,
+                    ),
+                    PipelineItem(
+                        func=int,
+                        func_path="path",
+                        event="event2",
+                        group="group",
+                        clones=1,
+                    ),
                 ],
                 UnrelatedConsumersError,
                 None,
                 None,
-            ),
-            (
-                [PipelineItem(func=int, event="event", group="group", clones=1)],
                 None,
-                1,
-                "event",
             ),
             (
                 [
-                    PipelineItem(func=int, event="ev", group="group", clones=2),
-                    PipelineItem(func=int, event="ev", group="group", clones=2),
+                    PipelineItem(
+                        func=int,
+                        func_path="path",
+                        event="event",
+                        group="group",
+                        clones=1,
+                    )
+                ],
+                None,
+                1,
+                "event",
+                "group",
+            ),
+            (
+                [
+                    PipelineItem(
+                        func=int,
+                        func_path="path",
+                        event="ev",
+                        group="group",
+                        clones=2,
+                    ),
+                    PipelineItem(
+                        func=int,
+                        func_path="path",
+                        event="ev",
+                        group="group",
+                        clones=2,
+                    ),
                 ],
                 None,
                 2,
                 "ev",
+                "group",
             ),
         ),
         ids=(
@@ -65,6 +113,7 @@ class TestProcessPipeline:
         expected_error,
         expected_clones,
         expected_event,
+        expected_group,
         pipeline_factory,
         ecore_mock,
         consumer_mock,
@@ -93,6 +142,7 @@ class TestProcessPipeline:
             runner_mock.assert_called_once_with(
                 ecore_mock.stream,
                 expected_event,
+                expected_group,
                 *[consumer_mock.return_value for _ in items],
                 logger=_logger,
             )
