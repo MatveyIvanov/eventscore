@@ -73,11 +73,21 @@ class IECore(Protocol):
         ...
 
     @property
+    def stream_factory(self) -> IStreamFactory:
+        """
+        Stream factory getter
+
+        :return: Stream factory
+        :rtype: IStreamFactory
+        """
+        ...
+
+    @property
     def stream(self) -> IStream:
         """
         Stream getter
 
-        :return: Stream
+        :return: Stream instance
         :rtype: IStream
         """
         ...
@@ -216,14 +226,14 @@ class ISpawnWorker(Protocol):
 
     __slots__ = ()
 
-    def __call__(self, worker: Worker) -> None:
+    def __call__(self, worker: Worker) -> tuple[int, ...]:
         """
         Spawn worker
 
         :param worker: Worker to spawn
         :type worker: Worker
-        :return: None
-        :rtype: None
+        :return: PIDs
+        :rtype: tuple[int, ...]
         """
         ...
 
@@ -347,6 +357,26 @@ class IStream(Protocol):
         ...
 
 
+class IStreamFactory(Protocol):
+    """
+    Stream factory class.
+    One and only purpose of this class is to create a stream.
+    """
+
+    __slots__ = ()
+
+    def __init__(self, stream_class: type[IStream], kwargs: dict[str, Any]) -> None: ...
+
+    def __call__(self) -> IStream:
+        """
+        Create a stream
+
+        :return: Stream instance
+        :rtype: IStream
+        """
+        ...
+
+
 class IRunner(Protocol):
     """
     Runner class.
@@ -371,7 +401,7 @@ class IRunner(Protocol):
 
     def __init__(
         self,
-        stream: IStream,
+        stream_factory: IStreamFactory,
         event: EventType,
         group: ConsumerGroup,
         *consumers: IConsumer,

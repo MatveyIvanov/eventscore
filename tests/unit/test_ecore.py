@@ -180,10 +180,10 @@ class TestECore:
             assert getattr(ecore, property_name) == instance
             type.assert_not_called()
 
-    def test_stream(self, stream_mock, ecore_factory):
-        ecore = ecore_factory(stream=stream_mock)
+    def test_stream_factory(self, stream_factory_mock, ecore_factory):
+        ecore = ecore_factory(stream_factory=stream_factory_mock)
 
-        assert ecore.stream == stream_mock
+        assert ecore.stream_factory == stream_factory_mock
 
     @pytest.mark.parametrize("func", (mock.Mock(), None), ids=("func", "no-func"))
     @pytest.mark.parametrize("event", ("event",), ids=("event",))

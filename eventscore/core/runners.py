@@ -6,7 +6,7 @@ from eventscore.core.abstract import (
     EventType,
     IConsumer,
     IRunner,
-    IStream,
+    IStreamFactory,
 )
 from eventscore.core.exceptions import EmptyStreamError
 from eventscore.core.logging import logger as _logger
@@ -15,14 +15,14 @@ from eventscore.core.logging import logger as _logger
 class ObserverRunner(IRunner):
     def __init__(
         self,
-        stream: IStream,
+        stream_factory: IStreamFactory,
         event: EventType,
         group: ConsumerGroup,
         *consumers: IConsumer,
         max_events: int = -1,
         logger: logging.Logger = _logger,
     ) -> None:
-        self.__stream = stream
+        self.__stream = stream_factory()
         self.__event = event
         self.__group = group
         self.__max_events = max_events

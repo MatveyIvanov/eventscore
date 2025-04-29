@@ -1,6 +1,8 @@
+import os
 from unittest import mock
 
 import pytest
+from redis import ResponseError
 
 from eventscore.core.exceptions import EmptyStreamError, TooManyDataError
 from tests.unit.conftest import SKIP
@@ -127,7 +129,7 @@ class TestRedisStream:
         ),
     )
     @pytest.mark.parametrize(
-        "xread,expected_error",
+        "xreadgroup,expected_error",
         (
             ([], EmptyStreamError),
             ([tuple()], EmptyStreamError),
@@ -157,11 +159,20 @@ class TestRedisStream:
             ),
         ),
         ids=(
-            "empty-xread",
+            "empty-xreadgroup",
             "empty-events",
             "empty-messages-in-event",
             "too-many-messages-in-event",
             "valid-event",
+        ),
+    )
+    @pytest.mark.parametrize(
+        "xgroup_exists,instance_knows_xgroup_created,expect_xgroup_creation",
+        (
+            (False, False, True),
+            (False, True, False),
+            (True, False, True),
+            (True, True, False),
         ),
     )
     def test_pop(
@@ -169,75 +180,74 @@ class TestRedisStream:
         block,
         timeout,
         expected_timeout,
-        xread,
+        xreadgroup,
         expected_error,
+        xgroup_exists,
+        instance_knows_xgroup_created,
+        expect_xgroup_creation,
         event_serializer_mock,
         redis_stream_factory,
         redis_mock,
-        mp_mock,
-        mp_lock_mock,
     ):
-        redis_mock.xread.return_value = xread
+        redis_mock.xreadgroup.return_value = xreadgroup
+        if xgroup_exists:
+            redis_mock.xgroup_create.side_effect = ResponseError
         kwargs = {}
         if block != SKIP:
             kwargs["block"] = block
         if timeout != SKIP:
             kwargs["timeout"] = timeout
 
-        with (
-            mock.patch("eventscore.ext.redis.streams.Redis", redis_mock),
-            mock.patch("eventscore.ext.redis.streams.mp", mp_mock),
-        ):
+        expected_redis_calls = []
+        if expect_xgroup_creation:
+            expected_redis_calls.append(
+                mock.call.xgroup_create(
+                    name="event",
+                    groupname="group",
+                    id="0",
+                    mkstream=True,
+                )
+            )
+        expected_redis_calls.append(
+            mock.call.xreadgroup(
+                groupname="group",
+                consumername=str(os.getpid()),
+                streams={"event": ">"},
+                count=1,
+                block=expected_timeout,
+            )
+        )
+        if not expected_error:
+            expected_redis_calls.append(mock.call.xack("event", "group", b"uid"))
+
+        with mock.patch("eventscore.ext.redis.streams.Redis", redis_mock):
             stream = redis_stream_factory()
 
-            assert (
-                getattr(stream, "_RedisStream__event_n_group_to_latest_id")["event"]
-                == "0"
-            )
+            getattr(stream, "_RedisStream__event_n_group_to_xgroup")[
+                ("event", "group")
+            ] = instance_knows_xgroup_created
 
             if expected_error is not None:
                 with pytest.raises(expected_error):
                     stream.pop("event", "group", **kwargs)
 
                 assert (
-                    getattr(stream, "_RedisStream__event_n_group_to_latest_id")[
+                    getattr(stream, "_RedisStream__event_n_group_to_xgroup")[
                         ("event", "group")
                     ]
-                    == "0"
+                    is True
                 )
-                redis_mock.assert_has_calls(
-                    [
-                        mock.call.xread(
-                            streams={"event": "0"},
-                            count=1,
-                            block=expected_timeout,
-                        ),
-                    ]
-                )
+                redis_mock.assert_has_calls(expected_redis_calls)
                 event_serializer_mock.decode.assert_not_called()
-                mp_mock.Lock.assert_called_once_with()
-                mp_lock_mock.acquire.assert_called_once_with()
-                mp_lock_mock.release.assert_called_once_with()
             else:
                 event = stream.pop("event", "group", **kwargs)
 
                 assert event == event_serializer_mock.decode.return_value
                 assert (
-                    getattr(stream, "_RedisStream__event_n_group_to_latest_id")[
+                    getattr(stream, "_RedisStream__event_n_group_to_xgroup")[
                         ("event", "group")
                     ]
-                    == "uid"
+                    is True
                 )
-                redis_mock.assert_has_calls(
-                    [
-                        mock.call.xread(
-                            streams={"event": "0"},
-                            count=1,
-                            block=expected_timeout,
-                        ),
-                    ]
-                )
+                redis_mock.assert_has_calls(expected_redis_calls)
                 event_serializer_mock.decode.assert_called_once_with(b"data")
-                mp_mock.Lock.assert_called_once_with()
-                mp_lock_mock.acquire.assert_called_once_with()
-                mp_lock_mock.release.assert_called_once_with()

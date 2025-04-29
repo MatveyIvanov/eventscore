@@ -1,5 +1,6 @@
 import logging
 import multiprocessing as mp
+from typing import cast
 
 from eventscore.core.abstract import ISpawnWorker
 from eventscore.core.logging import logger as _logger
@@ -16,7 +17,7 @@ class SpawnMPWorker(ISpawnWorker):
         """
         self.__logger = logger
 
-    def __call__(self, worker: Worker) -> None:
+    def __call__(self, worker: Worker) -> tuple[int, ...]:
         processes: list[mp.Process] = []
         for _ in range(worker.clones):
             process = mp.Process(target=worker.runner.run, daemon=True)
@@ -25,3 +26,5 @@ class SpawnMPWorker(ISpawnWorker):
         for process in processes:
             process.start()
             self.__logger.debug(f"Process {process.pid} has started.")
+
+        return tuple(cast(int, process.pid) for process in processes)

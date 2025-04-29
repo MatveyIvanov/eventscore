@@ -74,6 +74,11 @@ def stream_mock(event):
 
 
 @pytest.fixture
+def stream_factory_mock(stream_mock):
+    return mock.Mock(return_value=stream_mock)
+
+
+@pytest.fixture
 def process_pipeline_mock(worker_factory):
     return mock.Mock(return_value=worker_factory())
 
@@ -122,7 +127,7 @@ def threading_mock(threading_thread_mock):
 def redis_mock():
     redis = mock.Mock()
     redis.return_value = redis
-    redis.xread.return_value = [
+    redis.xreadgroup.return_value = [
         (
             b"event",
             (
@@ -152,7 +157,7 @@ def spawn_mp_worker():
 
 
 @pytest.fixture
-def observer_runner_factory(stream_mock):
+def observer_runner_factory(stream_factory_mock):
     def factory(
         event,
         group,
@@ -164,7 +169,7 @@ def observer_runner_factory(stream_mock):
         if logger != SKIP:
             kwargs["logger"] = logger
         return ObserverRunner(
-            stream_mock,
+            stream_factory_mock,
             event,
             group,
             *consumers,
@@ -199,9 +204,11 @@ SELF = "self"
 
 
 @pytest.fixture
-def ecore_factory(stream_mock, process_pipeline_mock, spawn_worker_mock, producer_mock):
+def ecore_factory(
+    stream_factory_mock, process_pipeline_mock, spawn_worker_mock, producer_mock
+):
     def factory(
-        stream=stream_mock,
+        stream_factory=stream_factory_mock,
         process_pipeline=process_pipeline_mock,
         process_pipeline_type=ProcessPipeline,
         process_pipeline_init_kwargs=None,
@@ -215,8 +222,8 @@ def ecore_factory(stream_mock, process_pipeline_mock, spawn_worker_mock, produce
         kwdefaults_overrides=None,
     ):
         kwargs = {}
-        if stream != SKIP:
-            kwargs["stream"] = stream
+        if stream_factory != SKIP:
+            kwargs["stream_factory"] = stream_factory
         if process_pipeline != SKIP:
             kwargs["process_pipeline"] = process_pipeline
         if process_pipeline_type != SKIP:

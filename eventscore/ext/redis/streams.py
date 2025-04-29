@@ -1,14 +1,12 @@
 import logging
-import multiprocessing as mp
+import os
 from collections import defaultdict
-from collections.abc import Iterator
-from contextlib import contextmanager
 from typing import TYPE_CHECKING, Any, TypeAlias
 
+import redis
+
 if TYPE_CHECKING:
-    from multiprocessing.synchronize import (
-        _LockLike,  # pyright:ignore[reportPrivateUsage]
-    )
+    pass
 
 from redis import Redis
 
@@ -60,13 +58,11 @@ class RedisStream(IStream):
         )
         self.__redis = redis or Redis(**redis_init_kwargs)
         self.__serializer = serializer
-        self.__event_n_group_to_latest_id: dict[
-            tuple[EventType, ConsumerGroup], str
-        ] = defaultdict(lambda: "0")
-        self.__event_n_group_to_lock: dict[
-            tuple[EventType, ConsumerGroup], _LockLike
-        ] = defaultdict(lambda: mp.Lock())
+        self.__event_n_group_to_xgroup: dict[tuple[EventType, ConsumerGroup], bool] = (
+            defaultdict(bool)
+        )
         self.__logger = logger
+        self.__name = str(os.getpid())
 
     def put(
         self,
@@ -89,45 +85,50 @@ class RedisStream(IStream):
         block: bool = True,
         timeout: int = 5,
     ) -> Event:
-        self.__logger.debug(
-            f"About to xread an event. Stream {id(self)}, "
-            + f"latest ID {self.__event_n_group_to_latest_id[(event, group)]}."
+        self.__logger.debug(f"About to xread an event. Stream {id(self)}")
+        self.__ensure_xgroup(event, group)
+        xresult: XReadT = self.__redis.xreadgroup(  # type:ignore[assignment]
+            groupname=str(group),
+            consumername=self.__name,
+            streams={str(event): ">"},
+            count=1,
+            block=timeout * 1000 if block else None,
         )
-        with self.__lock(event, group):
-            xresult: XReadT = self.__redis.xread(
-                streams={
-                    str(event): self.__event_n_group_to_latest_id[
-                        (event, group)
-                    ]  # type:ignore # noqa:E501
-                },
-                count=1,
-                block=timeout * 1000 if block else None,
-            )
-            self.__logger.debug(f"XREADed {xresult}.")
-            if not xresult:
-                raise EmptyStreamError
+        self.__logger.debug(f"XREADedGROUP {xresult}.")
+        if not xresult:
+            raise EmptyStreamError
 
-            item = xresult[0]
-            if not item:
-                raise EmptyStreamError
+        item = xresult[0]
+        if not item:
+            raise EmptyStreamError
 
-            name, data = item
-            if not data:
-                raise EmptyStreamError
-            if len(data) > 1:
-                raise TooManyDataError
+        name, data = item
+        if not data:
+            raise EmptyStreamError
+        if len(data) > 1:
+            raise TooManyDataError
 
-            uid, payload = data[0]
-            self.__event_n_group_to_latest_id[(event, group)] = uid.decode()
-
+        uid, payload = data[0]
+        _ = self.__redis.xack(str(event), str(group), uid)
         bevent = payload[b"value"]
         self.__logger.debug(f"Got valid event {name.decode()} with id {uid.decode()}.")
         return self.__serializer.decode(bevent)
 
-    @contextmanager
-    def __lock(self, event: EventType, group: ConsumerGroup) -> Iterator[None]:
-        _ = self.__event_n_group_to_lock[(event, group)].acquire()
+    def __ensure_xgroup(self, event: EventType, group: ConsumerGroup) -> None:
+        if self.__event_n_group_to_xgroup[(event, group)]:
+            return
         try:
-            yield
-        finally:
-            self.__event_n_group_to_lock[(event, group)].release()
+            _ = self.__redis.xgroup_create(
+                name=str(event),
+                groupname=str(group),
+                # TODO: make this configurable,
+                #  otherwise restart will cause duplicate reads
+                id="0",
+                mkstream=True,
+            )
+        except redis.ResponseError:
+            self.__event_n_group_to_xgroup[(event, group)] = True
+            self.__logger.debug(f"XGROUP already created for {(event, group)}.")
+        else:
+            self.__event_n_group_to_xgroup[(event, group)] = True
+            self.__logger.debug(f"XGROUP created for {(event, group)}.")

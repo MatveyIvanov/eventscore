@@ -1,11 +1,21 @@
+MAKE_DIR := $(shell pwd)
+
 test:
-	poetry run pytest .
-unittest:
+	$(MAKE) test-unit
+	$(MAKE) test-integration
+	$(MAKE) test-e2e
+test-unit:
 	poetry run pytest . -m unit
-integrationtest:
-	poetry run pytest . -m integration
-e2etest:
+test-integration:
+	$(MAKE) compose-up DIR="tests/integration/redis" OPTS="--build"
+	poetry run pytest . -m integration || true
+	$(MAKE) compose-down DIR="tests/integration/redis"
+test-e2e:
 	poetry run pytest . -m e2e
+compose-up:
+	cd $(DIR) && docker-compose up -d $(OPTS)
+compose-down:
+	cd $(DIR) && docker-compose down
 lint:
 	poetry run flake8 .
 	poetry run ruff check
@@ -36,8 +46,8 @@ update-examples:
 	cp -r eventscore examples/fastapi/src/
 django-example:
 	$(MAKE) update-examples
-	docker compose -f examples/django/docker/docker-compose.yml up $(OPTS)
+	cd examples/django/docker && docker-compose up $(OPTS)
 fastapi-example:
 	$(MAKE) update-examples
-	docker compose -f examples/fastapi/docker/docker-compose.yml up $(OPTS)
+	cd examples/fastapi/docker && docker-compose up $(OPTS)
 

@@ -84,7 +84,7 @@ class ProcessPipeline(IProcessPipeline):
         group: ConsumerGroup,
     ) -> IRunner:
         return self.__runner_type(
-            ecore.stream,
+            ecore.stream_factory,
             event,
             group,
             *consumers,

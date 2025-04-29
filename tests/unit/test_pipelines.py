@@ -140,7 +140,7 @@ class TestProcessPipeline:
                 [mock.call(item.func, logger=_logger) for item in items]
             )
             runner_mock.assert_called_once_with(
-                ecore_mock.stream,
+                ecore_mock.stream_factory,
                 expected_event,
                 expected_group,
                 *[consumer_mock.return_value for _ in items],

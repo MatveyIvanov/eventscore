@@ -16,6 +16,7 @@ from eventscore.core.abstract import (
     IProducer,
     ISpawnWorker,
     IStream,
+    IStreamFactory,
     NumberOfClones,
 )
 from eventscore.core.exceptions import AlreadySpawnedError
@@ -40,7 +41,7 @@ FoundConsumerFunctions: TypeAlias = list[
 class ECore(IECore):
     def __init__(
         self,
-        stream: IStream,
+        stream_factory: IStreamFactory,
         *,
         process_pipeline: IProcessPipeline | None = None,
         process_pipeline_type: type[IProcessPipeline] = ProcessPipeline,
@@ -56,8 +57,8 @@ class ECore(IECore):
         """
         ECore constructor
 
-        :param stream: Event stream instance
-        :type stream: IStream
+        :param stream_factory: Event stream factory
+        :type stream_factory: IStreamFactory
         :param process_pipeline: Pipeline processor. Defaults to None
         :type process_pipeline: IProcessPipeline | None
         :param process_pipeline_type: Type of the pipeline processor.
@@ -91,7 +92,8 @@ class ECore(IECore):
         :param logger: Logger. Defaults to _logger
         :type logger: logging.Logger | None
         """
-        self.__stream = stream
+        self.__stream_factory = stream_factory
+        self.__stream: IStream | None = None
         self.__process_pipeline = process_pipeline
         self.__process_pipeline_type = process_pipeline_type
         self.__process_pipeline_init_kwargs = process_pipeline_init_kwargs
@@ -146,7 +148,13 @@ class ECore(IECore):
         return self.__producer
 
     @property
+    def stream_factory(self) -> IStreamFactory:
+        return self.__stream_factory
+
+    @property
     def stream(self) -> IStream:
+        if self.__stream is None:
+            self.__stream = self.stream_factory()
         return self.__stream
 
     def consumer(
@@ -311,7 +319,7 @@ class ECore(IECore):
 
         workers = self.__build_workers()
         for worker in workers:
-            self.spawn_worker(worker)
+            _ = self.spawn_worker(worker)
         self.__workers_spawned = True
         self.__logger.debug("Workers successfully spawned.")
 
