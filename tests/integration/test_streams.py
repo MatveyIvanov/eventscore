@@ -6,6 +6,7 @@ import pytest
 from eventscore.core.abstract import IStreamFactory
 from eventscore.core.exceptions import EventsCoreError
 from eventscore.core.types import ConsumerGroup, Event, EventType
+from tests.conftest import require_env
 from tests.integration.conftest import override_mp_start_method
 
 
@@ -115,6 +116,10 @@ class TestRedisStreams:
         ids=("first", "second", "third"),
     )
     @pytest.mark.parametrize("mp_start_method", ("fork", "spawn"))
+    @require_env(name="REDIS_HOST")
+    @require_env(name="REDIS_PORT")
+    @require_env(name="REDIS_DB")
+    @require_env(name="REDIS_PASSWORD")
     def test_pop_concurrency(
         self,
         eventset,

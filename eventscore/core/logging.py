@@ -11,4 +11,4 @@ handler.setFormatter(formatter)
 
 logger = logging.getLogger()
 logger.addHandler(handler)
-logger.setLevel(logging.ERROR)
+logger.setLevel(logging.DEBUG)

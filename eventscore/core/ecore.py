@@ -2,6 +2,7 @@ import importlib
 import inspect
 import logging
 import os
+import sys
 from collections import defaultdict
 from pathlib import Path
 from typing import Any, TypeAlias
@@ -36,6 +37,31 @@ FoundConsumerFunctions: TypeAlias = list[
         FunctionModulePath,
     ]
 ]
+
+
+def _is_consumer(obj):
+    return inspect.isfunction(obj) and getattr(obj, "__is_consumer__", False)
+
+
+def _iter_python_files(pkg_path: Path):
+    """
+    Recursively yield all Python files in pkg_path (ignoring __pycache__ and hidden files).
+    """
+    for root, dirs, files in os.walk(pkg_path):
+        # Don't go into __pycache__ directories
+        dirs[:] = [d for d in dirs if not d.startswith(".") and d != "__pycache__"]
+        for filename in files:
+            if not filename.startswith(".") and filename.endswith(".py"):
+                yield Path(root) / filename
+
+
+def _module_name_from_path(file_path: Path, pkg_root: Path, pkg: str):
+    """
+    Given a file_path, pkg_root, and package name, compute importable module path as string.
+    """
+    rel = file_path.relative_to(pkg_root).with_suffix("")  # strip .py
+    parts = rel.parts
+    return ".".join([pkg] + list(parts))
 
 
 class ECore(IECore):
@@ -208,14 +234,104 @@ class ECore(IECore):
             + "is successfully registered."
         )
 
-    def discover_consumers(self, *, root: str | None = None) -> None:
+    def discover_consumers(self, *, root: str = "") -> None:
         if self.__workers_spawned:
             self.__logger.error("Consumer registration attempt after spawning.")
             raise AlreadySpawnedError
 
-        root = root or os.getcwd()
+        # Calculate absolute root as a Path
+        abs_root = (Path(os.getcwd()) / root).resolve()
+        if not abs_root.exists():
+            raise RuntimeError(f"Root directory {abs_root} does not exist")
+        if not abs_root.is_dir():
+            raise RuntimeError(f"Root {abs_root} is not a directory")
+
+        # Try to determine the package name from root. We'll use its parent as the sys.path entry.
+        pkg_root = abs_root
+        # Example: /home/me/project/myapp/subpkg
+        # Would sys.path.append /home/me/project and import myapp.subpkg.module
+        # So, pkg="subpkg", sys_path_entry=pkg_root.parent
+
+        # Guess the package name as the directory name, fallback to "." if not a package
+        pkg_name = abs_root.name
+        sys_path_entry = str(abs_root.parent)
+
+        if sys_path_entry not in sys.path:
+            sys.path.append(sys_path_entry)
+            remove_sys_path = True
+        else:
+            remove_sys_path = False
+
+        self.__logger.debug(
+            f"Consumer discovering started for root={abs_root}, pkg_name={pkg_name}, sys_path_entry={sys_path_entry}"
+        )
+
+        found: list[FoundConsumerFunctions] = []
+
+        try:
+            for file_path in _iter_python_files(pkg_root):
+                if file_path.name == "__init__.py":
+                    # Import package module: just pkg_name (e.g. 'myapp.subpkg')
+                    modname = (
+                        ".".join(
+                            [pkg_name]
+                            + list(file_path.parent.relative_to(pkg_root).parts)
+                        )
+                        if file_path.parent != pkg_root
+                        else pkg_name
+                    )
+                else:
+                    modname = _module_name_from_path(file_path, pkg_root, pkg_name)
+
+                self.__logger.debug(f"Discovering in module {modname} at {file_path}")
+
+                try:
+                    module = importlib.import_module(modname)
+                except Exception as e:
+                    self.__logger.warning(f"Skipping {modname} ({file_path}): {e!r}")
+                    continue
+
+                for _, func in inspect.getmembers(module, _is_consumer):
+                    try:
+                        found.append(
+                            (
+                                func,
+                                func.__consumer_event__,
+                                func.__consumer_group__,
+                                func.__consumer_clones__,
+                                f"{file_path}:{func.__name__}",
+                            )
+                        )
+                        self.__logger.debug(f"Discovered consumer: {func} in {modname}")
+                    except AttributeError as exc:
+                        self.__logger.warning(
+                            f"Skipping function {func} in module {modname}: {exc!r}"
+                        )
+
+        finally:
+            # Clean up sys.path if we added it
+            if remove_sys_path:
+                sys.path.remove(sys_path_entry)
+
+        for func, event, group, clones, func_path in found:
+            self.register_consumer(
+                func, event, group, clones=clones, func_path=func_path
+            )
+
+        self.__logger.debug(
+            f"Consumer discovering ended. Found {len(found)} consumer functions."
+        )
+
+    def old_discover_consumers(self, *, root: str = "") -> None:
+        if self.__workers_spawned:
+            self.__logger.error("Consumer registration attempt after spawning.")
+            raise AlreadySpawnedError
+
+        root = (os.getcwd() + "/" + root.strip("/")).removesuffix("/")
         path = Path(root)
-        self.__logger.debug(f"Consumer discovering started for root={root}.")
+        self.__logger.debug(
+            f"Consumer discovering started for path={path} with root={root}."
+        )
 
         def discover_in_module(
             path: Path,
@@ -247,7 +363,9 @@ class ECore(IECore):
                         obj.__consumer_event__,  # type: ignore
                         obj.__consumer_group__,  # type: ignore
                         obj.__consumer_clones__,  # type: ignore
-                        path,  # pyright:ignore[reportArgumentType]
+                        str(path)
+                        + ":"
+                        + obj.__name__,  # pyright:ignore[reportArgumentType]
                     )
                 )
                 self.__logger.debug(

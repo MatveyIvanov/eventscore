@@ -23,13 +23,21 @@ def override_mp_start_method(method: Literal["fork", "spawn"]) -> Iterator[None]
         mp.set_start_method(orig_method, force=True)
 
 
+@pytest.fixture(scope="session")
+def envs():
+    return {
+        "tests/integration/.env",
+        "tests/integration/redis/.env",
+    }
+
+
 @pytest.fixture(scope="session", autouse=True)
-def load_env():
-    path = "tests/integration/redis/.env"
+def load_env(envs):
     pwd = os.getcwd()
-    for dir in path.split("/")[:-1]:
-        pwd = pwd.replace("/" + dir, "")
-    _ = load_dotenv(pwd + "/" + path, verbose=True, override=True)
+    for env in envs:
+        for dir in env.split("/")[:-1]:
+            pwd = pwd.replace("/" + dir, "")
+        _ = load_dotenv(pwd + "/" + env, verbose=True, override=True)
 
 
 @pytest.fixture(scope="session")
