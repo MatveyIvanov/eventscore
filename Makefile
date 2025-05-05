@@ -13,9 +13,9 @@ test-integration:
 test-e2e:
 	poetry run pytest . -m e2e
 compose-up:
-	cd $(DIR) && docker-compose up -d $(OPTS)
+	cd $(DIR) && (docker-compose up -d $(OPTS) || docker compose up -d $(OPTS))
 compose-down:
-	cd $(DIR) && docker-compose down
+	cd $(DIR) && (docker-compose down || docker compose down)
 lint:
 	poetry run flake8 .
 	poetry run ruff check
@@ -46,8 +46,8 @@ update-examples:
 	cp -r eventscore examples/fastapi/src/
 django-example:
 	$(MAKE) update-examples
-	cd examples/django/docker && docker-compose up $(OPTS)
+	cd examples/django/docker && (docker-compose up $(OPTS) || docker compose up $(OPTS))
 fastapi-example:
 	$(MAKE) update-examples
-	cd examples/fastapi/docker && docker-compose up $(OPTS)
+	cd examples/fastapi/docker && (docker-compose up $(OPTS) || docker compose up $(OPTS))
 

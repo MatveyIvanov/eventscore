@@ -28,3 +28,15 @@ class EmptyStreamError(EventsCoreError):
 
 class TooManyDataError(EventsCoreError):
     message = "Unexpected number of data received for event."
+
+
+class PathError(EventsCoreError):
+    message = "Provided path does not exist."
+
+
+class NotADirectoryError(EventsCoreError):
+    message = "Provided root is not a directory."
+
+
+class NotAPackageError(EventsCoreError):
+    message = "Provided root is not a Python package."

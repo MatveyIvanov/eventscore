@@ -5,7 +5,7 @@ import os
 import sys
 from collections import defaultdict
 from pathlib import Path
-from typing import Any, TypeAlias
+from typing import Any, Iterator, TypeAlias
 
 from eventscore.core.abstract import (
     ConsumerFunc,
@@ -20,7 +20,12 @@ from eventscore.core.abstract import (
     IStreamFactory,
     NumberOfClones,
 )
-from eventscore.core.exceptions import AlreadySpawnedError
+from eventscore.core.exceptions import (
+    AlreadySpawnedError,
+    NotADirectoryError,
+    NotAPackageError,
+    PathError,
+)
 from eventscore.core.logging import logger as _logger
 from eventscore.core.pipelines import Pipeline, PipelineItem, ProcessPipeline
 from eventscore.core.producers import Producer
@@ -43,13 +48,29 @@ def _is_consumer(obj):
     return inspect.isfunction(obj) and getattr(obj, "__is_consumer__", False)
 
 
-def _iter_python_files(pkg_path: Path):
+def _is_python_package(path: Path) -> bool:
+    print(path)
+    for _, _, files in os.walk(path):
+        for file in files:
+            if file == "__init__.py":
+                return True
+        return False
+    return False
+
+
+def _iter_python_files(pkg_path: Path) -> Iterator[Path]:
     """
     Recursively yield all Python files in pkg_path (ignoring __pycache__ and hidden files).
     """
     for root, dirs, files in os.walk(pkg_path):
         # Don't go into __pycache__ directories
-        dirs[:] = [d for d in dirs if not d.startswith(".") and d != "__pycache__"]
+        dirs[:] = [
+            d
+            for d in dirs
+            if not d.startswith(".")
+            and d != "__pycache__"
+            and _is_python_package(Path(pkg_path) / d)
+        ]
         for filename in files:
             if not filename.startswith(".") and filename.endswith(".py"):
                 yield Path(root) / filename
@@ -239,12 +260,13 @@ class ECore(IECore):
             self.__logger.error("Consumer registration attempt after spawning.")
             raise AlreadySpawnedError
 
-        # Calculate absolute root as a Path
         abs_root = (Path(os.getcwd()) / root).resolve()
         if not abs_root.exists():
-            raise RuntimeError(f"Root directory {abs_root} does not exist")
+            raise PathError
         if not abs_root.is_dir():
-            raise RuntimeError(f"Root {abs_root} is not a directory")
+            raise NotADirectoryError
+        if not _is_python_package(abs_root):
+            raise NotAPackageError
 
         # Try to determine the package name from root. We'll use its parent as the sys.path entry.
         pkg_root = abs_root
@@ -256,14 +278,15 @@ class ECore(IECore):
         pkg_name = abs_root.name
         sys_path_entry = str(abs_root.parent)
 
+        remove_sys_path = False
         if sys_path_entry not in sys.path:
             sys.path.append(sys_path_entry)
             remove_sys_path = True
-        else:
-            remove_sys_path = False
 
         self.__logger.debug(
-            f"Consumer discovering started for root={abs_root}, pkg_name={pkg_name}, sys_path_entry={sys_path_entry}"
+            f"Consumer discovering started for root={abs_root}, "
+            + f"pkg_name={pkg_name}, "
+            + f"sys_path_entry={sys_path_entry}"
         )
 
         found: list[FoundConsumerFunctions] = []
@@ -315,7 +338,11 @@ class ECore(IECore):
 
         for func, event, group, clones, func_path in found:
             self.register_consumer(
-                func, event, group, clones=clones, func_path=func_path
+                func,
+                event,
+                group,
+                clones=clones,
+                func_path=func_path,
             )
 
         self.__logger.debug(
