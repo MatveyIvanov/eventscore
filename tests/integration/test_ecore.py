@@ -115,7 +115,6 @@ class TestECore:
     @require_env(name="ABSOLUTE_PATH_TO_PROJECT")
     def test_discover_consumers(self, root, group_to_expected_items, expected_error):
         ecore = ECore(stream_factory=lambda: None)
-        print(group_to_expected_items)
 
         with mock.patch(
             "eventscore.core.ecore.os.getcwd",
@@ -131,7 +130,6 @@ class TestECore:
                 ecore.discover_consumers(root=root)
 
                 for group, items in group_to_expected_items.items():
-                    print(group, ecore._ECore__pipelines[group])
                     assert len(ecore._ECore__pipelines[group].items) == len(
                         group_to_expected_items[group]
                     )

@@ -7,6 +7,7 @@ exclude =
     .tox
     docs
     examples
+    tests/e2e/django
 max-line-length = 88
 max-doc-length = 130
 indent-size = 4

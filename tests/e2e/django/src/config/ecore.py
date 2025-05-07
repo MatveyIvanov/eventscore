@@ -18,3 +18,7 @@ stream_factory = StreamFactory(
 )
 
 ecore = ECore(stream_factory=stream_factory)
+# One way of registering consumers,
+# no explicit registering required
+ecore.discover_consumers()
+ecore.spawn_workers()

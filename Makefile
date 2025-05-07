@@ -8,14 +8,16 @@ test-unit:
 	poetry run pytest . -m unit
 test-integration:
 	$(MAKE) compose-up DIR="tests/integration/redis" OPTS="--build"
-	poetry run pytest . -m integration || true
+	poetry run pytest . -m integration $(OPTS) || true
 	$(MAKE) compose-down DIR="tests/integration/redis"
 test-e2e:
-	poetry run pytest . -m e2e
+	$(MAKE) compose-up DIR="tests/e2e/django/docker" OPTS="--build"
+	poetry run pytest . -m e2e $(OPTS) || true
+	$(MAKE) compose-down DIR="tests/e2e/django/docker"
 compose-up:
 	cd $(DIR) && (docker-compose up -d $(OPTS) || docker compose up -d $(OPTS))
 compose-down:
-	cd $(DIR) && (docker-compose down || docker compose down)
+	cd $(DIR) && (docker-compose down -f || docker compose down)
 lint:
 	poetry run flake8 .
 	poetry run ruff check
@@ -41,13 +43,13 @@ docs:
 	cd docs \
 		&& poetry run sphinx-apidoc -f -o ../docs/source/ ../eventscore \
 		&& poetry run $(MAKE) html
-update-examples:
+update-examples-n-tests:
 	cp -r eventscore examples/django/src/
 	cp -r eventscore examples/fastapi/src/
+	cp -r eventscore tests/e2e/django/src/
 django-example:
-	$(MAKE) update-examples
+	$(MAKE) update-examples-n-tests
 	cd examples/django/docker && (docker-compose up $(OPTS) || docker compose up $(OPTS))
 fastapi-example:
-	$(MAKE) update-examples
+	$(MAKE) update-examples-n-tests
 	cd examples/fastapi/docker && (docker-compose up $(OPTS) || docker compose up $(OPTS))
-

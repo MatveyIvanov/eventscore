@@ -56,6 +56,9 @@ SKIPPED_CONTEXTS = {
 def _skipping_predicate() -> bool:
     if any(context in sys.argv for context in SKIPPED_CONTEXTS):
         return True
+    print(os.environ.get("RUN_MAIN", True), "*\n" * 10)
+    if not os.environ.get("RUN_MAIN", True):
+        return True
     return False
 
 
