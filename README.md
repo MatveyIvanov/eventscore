@@ -7,7 +7,7 @@
 ![PyPI - Version](https://img.shields.io/pypi/v/eventscore)
 ![PyPI - Python Version](https://img.shields.io/pypi/pyversions/eventscore)
 ![PyPI - Wheel](https://img.shields.io/pypi/wheel/eventscore)
-![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/MatveyIvanov/eventscore/test-ci.yml?branch=main)
+![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/MatveyIvanov/eventscore/testing.yml?branch=main)
 
 What is `eventscore`?
 -------------
@@ -41,6 +41,7 @@ To get started with developing `eventscore`, see [CONTRIBUTING.md](CONTRIBUTING.
 
 First (0.1.0) release roadmap
 -----------------------------
+
 * 90%+ unit-test coverage
 * e2e tests with basic flows
 * integration tests for consumer discovering, threading, multiprocessing and redis stream
