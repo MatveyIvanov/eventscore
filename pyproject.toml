@@ -338,7 +338,7 @@ env_list = [
     "format",
     "sort",
     "analyze",
-    #    "coveralls",
+    "coveralls",
 ]
 
 [tool.tox.env_run_base]
