@@ -46,7 +46,7 @@ jobs:
       - run: pip install tox
       - run: |
           cat <<EOF > ./tests/integration/.env
-          ABSOLUTE_PATH_TO_PROJECT=${{ github.workspace }}
+          ABSOLUTE_PATH_TO_PROJECT=${GITHUB_WORKSPACE}
           EOF
       - run: |
           cat <<EOF > ./tests/integration/redis/.env
@@ -81,7 +81,7 @@ jobs:
       - run: pip install tox
       - run: |
           cat <<EOF > ./tests/integration/.env
-          ABSOLUTE_PATH_TO_PROJECT=${{ github.workspace }}
+          ABSOLUTE_PATH_TO_PROJECT=${GITHUB_WORKSPACE}
           EOF
       - run: |
           cat <<EOF > ./tests/integration/redis/.env
