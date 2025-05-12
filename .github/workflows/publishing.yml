@@ -13,7 +13,7 @@ jobs:
     runs-on: ubuntu-24.04
     strategy:
       matrix:
-        toxenv: [ flake8, black, isort, mypy ]
+        toxenv: [ lint, format, sort, analyze ]
     steps:
       - uses: actions/checkout@v3
       - uses: actions/setup-python@v4
@@ -39,7 +39,7 @@ jobs:
 
   build-n-publish:
     runs-on: ubuntu-24.04
-    needs: [tests, linters]
+    needs: [ tests, linters ]
     steps:
       - uses: actions/checkout@v3
       - name: Build and Publish

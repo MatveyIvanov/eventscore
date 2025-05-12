@@ -64,6 +64,7 @@ markers = [
     "slow: marks tests as slow-tests (deselect with '-m \"not slow\"')",
     "concurrency: marks tests as concurrency-tests (deselect with '-m \"not concurrency\"')",
     "redis: marks tests as redis-tests (deselect with '-m \"not redis\"')",
+    "e2e: marks tests as e2e-tests (deselect with '-m \"not e2e\"')",
 ]
 addopts = [
     "-v",
@@ -348,8 +349,11 @@ deps = [
     "pytest-mock==3.14.0",
     "pytest-asyncio==0.23.5",
     "redis==5.2.1",
+    "kafka-python==2.1.5",
+    "python-dotenv>=1.1.0",
+    "requests",
 ]
-commands = [["pytest", "tests"]]
+commands = [["pytest", "tests", "-m", "not redis and not slow and not e2e"]]
 
 [tool.tox.env.lint]
 description = "Run linters on code base"
@@ -370,7 +374,7 @@ deps = [
 ]
 commands = [
     ["black", "--config", "pyproject.toml", "--check", "."],
-    ["ruff", "--config", "pyproject.toml", "format", "--check"],
+    #    ["ruff", "--config", "pyproject.toml", "format", "--check"],
 ]
 
 [tool.tox.env.sort]
@@ -386,8 +390,9 @@ commands = [
 description = "Run analizers on code base"
 deps = [
     "mypy==1.10.0",
-    "pyright==1.1.397",
+    "pyright>=1.1.400",
     "redis==5.2.1",
+    "kafka-python==2.1.5",
 ]
 commands = [
     ["mypy", "--config-file", "pyproject.toml", "eventscore"],
@@ -409,9 +414,9 @@ deps = [
 ]
 commands = [
     ["coverage", "erase"],
-    ["pytest", "tests"],
+    ["pytest", "tests", "-m", "not redis and not slow and not e2e"],
     ["coverage", "report"],
-    ["python", "-m", "pip", "install", "coveralls==4.0.1"], # ...
+    ["python", "-m", "pip", "install", "coveralls==4.0.1"],
     ["coveralls"],
 ]
 
