@@ -353,7 +353,7 @@ deps = [
     "python-dotenv>=1.1.0",
     "requests",
 ]
-commands = [["pytest", "tests", "-m", "not redis and not slow and not e2e"]]
+commands = [["pytest", "tests", "-m", "not redis and not slow and not e2e"]]  # FIXME
 
 [tool.tox.env.lint]
 description = "Run linters on code base"
@@ -414,7 +414,7 @@ deps = [
 ]
 commands = [
     ["coverage", "erase"],
-    ["pytest", "tests", "-m", "not redis and not slow and not e2e"],
+    ["pytest", "tests", "-m", "not redis and not slow and not e2e"], # FIXME
     ["coverage", "report"],
     ["python", "-m", "pip", "install", "coveralls==4.0.1"],
     ["coveralls"],

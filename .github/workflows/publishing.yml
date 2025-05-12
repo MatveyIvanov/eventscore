@@ -33,6 +33,23 @@ jobs:
         with:
           python-version: 3.13
       - run: pip install tox
+      - run: |
+          cat <<EOF > ./tests/integration/.env
+          ABSOLUTE_PATH_TO_PROJECT=${{ github.workspace }}
+          EOF
+      - run: |
+          cat <<EOF > ./tests/integration/redis/.env
+          PROJECT_NAME=integration
+          REDIS_VERSION=7.4.3-alpine
+          REDIS_HOST=0.0.0.0
+          REDIS_PORT=6379
+          REDIS_DB=0
+          REDIS_USER=default
+          REDIS_PASSWORD=password
+          RESTART_POLICY=no
+          REDIS_MEM_LIMIT=100M
+          REDIS_MEM_RESERVATION=100M
+          EOF
       - run: tox
         env:
           TOXENV: 3.13
