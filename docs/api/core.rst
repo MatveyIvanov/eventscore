@@ -19,7 +19,6 @@ Core Components
    core/types
    core/workers
 
-
 .. automodule:: eventscore.core
    :members:
    :undoc-members:
@@ -30,4 +29,13 @@ Core Components
 - :doc:`core/abstract`
 - :doc:`core/consumers`
 - :doc:`core/ecore`
-- etc.
+- :doc:`core/exceptions`
+- :doc:`core/logging`
+- :doc:`core/pipelines`
+- :doc:`core/pkg`
+- :doc:`core/producers`
+- :doc:`core/runners`
+- :doc:`core/serializers`
+- :doc:`core/streams`
+- :doc:`core/types`
+- :doc:`core/workers`

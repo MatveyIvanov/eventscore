@@ -7,5 +7,6 @@ Redis Extension
    :show-inheritance:
 
 **Submodules:**
+
 - :doc:`ext/redis/serializers`
 - :doc:`ext/redis/streams`
