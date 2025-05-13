@@ -13,7 +13,7 @@ Flexible, composable, and fast event workflows for Python.
 
 .. toctree::
    :hidden:
-   :maxdepth: 2
+   :maxdepth: 4
    :caption: On this page
 
    usage
