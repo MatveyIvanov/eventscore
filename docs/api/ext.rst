@@ -2,7 +2,7 @@ Extensions
 ==========
 
 .. toctree::
-   :maxdepth: 1
+   :maxdepth: 4
 
    ext/redis
 

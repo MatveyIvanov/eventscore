@@ -2,7 +2,7 @@ Redis Extension
 ===============
 
 .. toctree::
-   :maxdepth: 1
+   :maxdepth: 4
 
    ext/redis/serializers
    ext/redis/streams
