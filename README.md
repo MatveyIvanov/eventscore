@@ -1,4 +1,4 @@
-`eventscore`: Power up your application with event-driven design!
+`eventscore`: Power up your monolith with event-driven design!
 =======================================
 
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
@@ -31,6 +31,11 @@ github directly:
 python3 -m pip install -U git+https://github.com/MatveyIvanov/eventscore.git
 ```
 
+Example
+-------
+
+TODO
+
 Contributing
 ------------
 
@@ -39,26 +44,17 @@ highly appreciated and useful to the project.
 
 To get started with developing `eventscore`, see [CONTRIBUTING.md](CONTRIBUTING.md).
 
-First (0.1.0) release roadmap
------------------------------
-
-* 90%+ unit-test coverage
-* e2e tests with basic flows
-* integration tests for consumer discovering, threading, multiprocessing and redis stream
-* CI for PRs, main and release branches
-* CD for release branches
-
 Stable (1.0.0) release roadmap
 ------------------------------
 
 * 100% unit-test coverage
-* integration tests for threading and multiprocessing
+* Integration tests for threading and multiprocessing
 * e2e tests
 * 100% docs coverage
 * Kafka support
-* outbox pattern support
-* at least once semantic support
-* at most once semantic support
-* stress-tests, with/without eventscore performance comparison
-* multiple event types per consumer group
-* 
+* Outbox pattern support
+* At least once semantic support
+* At most once semantic support
+* Stress-tests, with/without eventscore performance comparison
+* Multiple event types per consumer group
+* ...
