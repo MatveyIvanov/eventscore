@@ -106,16 +106,4 @@ todo_include_todos = True
 
 html_last_updated_fmt = "%b %d, %Y"
 
-# -- Options for manual toc depth --------------------------------------------
-
-# toc depth in sidebar, if needed
-html_sidebars = {
-    "**": [
-        "globaltoc.html",
-        "relations.html",
-        "sourcelink.html",
-        "searchbox.html",
-    ]
-}
-
 # -- End of configuration ----------------------------------------------------
