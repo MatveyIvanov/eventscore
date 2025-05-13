@@ -2,10 +2,10 @@ Redis Extension
 ===============
 
 .. toctree::
-   :maxdepth: 4
+   :maxdepth: 2
 
-   ext/redis/serializers
-   ext/redis/streams
+   redis/serializers
+   redis/streams
 
 .. automodule:: eventscore.ext.redis
    :members:
@@ -14,5 +14,5 @@ Redis Extension
 
 **Submodules:**
 
-- :doc:`ext/redis/serializers`
-- :doc:`ext/redis/streams`
+- :doc:`redis/serializers`
+- :doc:`redis/streams`
