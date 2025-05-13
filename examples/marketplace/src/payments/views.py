@@ -1,3 +1,5 @@
+import random
+
 from config.di import Container
 from dependency_injector.wiring import Provide, inject
 from rest_framework.decorators import action
@@ -18,12 +20,22 @@ class PaymentViewSet(GenericViewSet):
         *args,
         **kwargs,
     ):
-        ecore.produce(
-            Event(
-                type="payment-complete",
-                payload={"product_id": request.data["product_id"]},
-            ),
-            block=True,
-        )
+        success = random.random() < 0.75
+        if success:
+            ecore.produce(
+                Event(
+                    type="payment-completed",
+                    payload={"product_id": request.data["product_id"]},
+                ),
+                block=True,
+            )
+        else:
+            ecore.produce(
+                Event(
+                    type="payment-failed",
+                    payload={"product_id": request.data["product_id"]},
+                ),
+                block=True,
+            )
 
         return Response("OK")

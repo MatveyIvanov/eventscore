@@ -46,6 +46,7 @@ docs:
 update-examples-n-tests:
 	cp -r eventscore examples/django/src/
 	cp -r eventscore examples/fastapi/src/
+	cp -r eventscore examples/marketplace/src/
 	cp -r eventscore tests/e2e/django/src/
 django-example:
 	$(MAKE) update-examples-n-tests
