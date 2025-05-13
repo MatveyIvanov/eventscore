@@ -1,13 +1,21 @@
-.. eventscore documentation master file, created by
-   sphinx-quickstart on Mon Mar 10 22:45:53 2025.
-   You can adapt this file completely to your liking, but it should at least
-   contain the root `toctree` directive.
+.. eventscore documentation master file, created by sphinx-quickstart
 
-Welcome to eventscore!
-=======================================================
+eventscore
+==========
+
+**Event-driven processing, simplified.**
+
+.. image:: _static/eventscore-logo.png
+   :align: center
+   :height: 70
+
+Flexible, composable, and fast event workflows for Python.
 
 .. toctree::
-   :glob:
+   :hidden:
+   :maxdepth: 2
+   :caption: On this page
 
-   source/*
-
+   usage
+   installation
+   api/index

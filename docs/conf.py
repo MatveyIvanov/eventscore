@@ -39,7 +39,7 @@ exclude_patterns = ["_build", "Thumbs.db", ".DS_Store"]
 autodoc_member_order = "bysource"
 autodoc_default_options = {
     "members": True,
-    "undoc-members": True,
+    "undoc-members": False,
     "private-members": False,
     "special-members": False,
     "show-inheritance": True,
@@ -66,7 +66,7 @@ html_favicon = "_static/favicon.ico"
 html_static_path = ["_static"]
 
 html_theme_options = {
-    "source_repository": "https://github.com/yourorg/yourproject/",
+    "source_repository": "https://github.com/MatveyIvanov/eventscore/",
     "source_branch": "main",
     "source_directory": "docs/",
     # Furo-specific tweaks:
@@ -77,8 +77,8 @@ html_theme_options = {
 # If you want to enable the “Edit on GitHub” links:
 html_context = {
     "display_github": True,
-    "github_user": "yourorg",
-    "github_repo": "yourproject",
+    "github_user": "MatveyIvanov",
+    "github_repo": "eventscore",
     "github_version": "main",
     "doc_path": "docs",
 }
