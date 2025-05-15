@@ -1,17 +1,15 @@
-from config.di import Container
-from dependency_injector.wiring import Provide, inject
+from config.ecore import ecore
 from rest_framework import mixins
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.viewsets import GenericViewSet
 
-from eventscore.core.abstract import IECore
 from eventscore.core.types import Event
 
 
 class ProductViewSet(GenericViewSet, mixins.RetrieveModelMixin):
     def get_queryset(self):
-        return [{"id": 1, "name": 1}]
+        return [{"id": "1", "name": 1}]
 
     def get_object(self):
         lookup_url_kwarg = self.lookup_url_kwarg or self.lookup_field
@@ -27,17 +25,15 @@ class ProductViewSet(GenericViewSet, mixins.RetrieveModelMixin):
             return None
 
     @action(methods=["POST"], detail=True)
-    @inject
     def purchase(
         self,
         request,
-        ecore: IECore = Provide[Container.ecore],
         *args,
         **kwargs,
     ):
         product = self.get_object()
         if not product:
-            return Response(status=404)
+            return Response("NOT FOUND", status=404)
 
         ecore.produce(
             Event(
@@ -47,4 +43,4 @@ class ProductViewSet(GenericViewSet, mixins.RetrieveModelMixin):
             block=True,
         )
 
-        return Response()
+        return Response("OK")

@@ -111,7 +111,9 @@ class RedisStream(IStream):
         uid, payload = data[0]
         _ = self.__redis.xack(str(event), str(group), uid)
         bevent = payload[b"value"]
-        self.__logger.debug(f"Got valid event {name.decode()} with id {uid.decode()}.")
+        self.__logger.debug(
+            f"Received valid event {name.decode()} with id {uid.decode()}."
+        )
         return self.__serializer.decode(bevent)
 
     def __ensure_xgroup(self, event: EventType, group: ConsumerGroup) -> None:

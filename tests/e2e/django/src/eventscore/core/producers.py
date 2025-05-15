@@ -27,4 +27,4 @@ class Producer(IProducer):
             f"Producing event {event} with block={block}, timeout={timeout}."
         )
         self.__ecore.stream.put(event=event, block=block, timeout=timeout)
-        self.__logger.debug(f"Event {event.uid} produced.")
+        self.__logger.info(f"Successfully produced an event: {event}.")

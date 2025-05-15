@@ -1,14 +1,12 @@
 import time
 
-from config.di import Container
+from config.ecore import ecore
 
 from eventscore.core.logging import logger
 from eventscore.core.types import Event
-from eventscore.decorators import consumer
 
 
-@consumer(
-    ecore=Container.ecore(),
+@ecore.consumer(
     event="product-out-of-stock",
     group="product-out-of-stock",
 )
@@ -17,8 +15,7 @@ def payment_init(event: Event):
     logger.info(f"Product out of stock notification sent for event: {event}")
 
 
-@consumer(
-    ecore=Container.ecore(),
+@ecore.consumer(
     event="payment-completed",
     group="payment-completed",
 )
@@ -27,10 +24,9 @@ def payment_completed(event: Event):
     logger.info(f"Payment success notification sent for event: {event}")
 
 
-@consumer(
-    ecore=Container.ecore(),
-    event="payment-falied",
-    group="payment-falied",
+@ecore.consumer(
+    event="payment-failed",
+    group="payment-failed",
 )
 def payment_failed(event: Event):
     time.sleep(1)  # Some external notification system API call

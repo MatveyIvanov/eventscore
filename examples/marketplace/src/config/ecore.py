@@ -1,6 +1,8 @@
+import logging
 import os
 
 from eventscore.core.ecore import ECore
+from eventscore.core.logging import logger
 from eventscore.core.streams import StreamFactory
 from eventscore.ext.redis.serializers import RedisEventSerializer
 from eventscore.ext.redis.streams import RedisStream
@@ -16,7 +18,9 @@ stream_factory = StreamFactory(
         redis_init_kwargs={"password": os.environ["REDIS_PASSWORD"]},
     ),
 )
-ecore = ECore(stream_factory=stream_factory)
+logger.setLevel(logging.INFO)
+ecore = ECore(stream_factory=stream_factory, logger=logger)
 # One way of registering consumers,
 # no explicit registering required
 ecore.discover_consumers()
+ecore.spawn_workers()

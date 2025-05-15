@@ -54,3 +54,6 @@ django-example:
 fastapi-example:
 	$(MAKE) update-examples-n-tests
 	cd examples/fastapi/docker && (docker-compose up $(OPTS) || docker compose up $(OPTS))
+marketplace-example:
+	$(MAKE) update-examples-n-tests
+	cd examples/marketplace/docker && (docker-compose up $(OPTS) || docker compose up $(OPTS))

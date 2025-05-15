@@ -1,27 +1,22 @@
 import random
 from decimal import Decimal
 
-from config.di import Container
-from dependency_injector.wiring import Provide, inject
+from config.ecore import ecore
 
-from eventscore.core.abstract import IECore
 from eventscore.core.types import Event
-from eventscore.decorators import consumer
 
 
-@consumer(
-    ecore=Container.ecore(),
+@ecore.consumer(
     event="product-purchase",
     group="product-purchase",
 )
-@inject
-def product_purchase(event: Event, ecore: IECore = Provide[Container.ecore]):
+def product_purchase(event: Event):
     in_stock = random.random() < 0.75
     if in_stock:
         ecore.produce(
             Event(
                 type="payment-init",
-                payload={**event.payload, "amount": Decimal("100")},
+                payload={**event.payload, "amount": str(Decimal("100"))},
             )
         )
     else:
