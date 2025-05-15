@@ -13,4 +13,6 @@ class Consumer(IConsumer):
     def consume(self, event: Event) -> None:
         self.__logger.debug("Consumer started.")
         self.__func(event)
-        self.__logger.debug("Consumer finished.")
+        self.__logger.info(
+            f"[{self.__func.__name__}] Successfully consumed an event: {event}."
+        )

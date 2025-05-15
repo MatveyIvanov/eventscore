@@ -3,6 +3,7 @@ import inspect
 import logging
 import os
 import sys
+import traceback
 from collections import defaultdict
 from collections.abc import Callable, Iterator
 from contextlib import contextmanager
@@ -135,6 +136,20 @@ class ECore(IECore):
         self.__workers_spawned = False
         self.__logger = logger
         self.__skip = skipping_predicate() if skipping_predicate else False
+        if not self.__skip:
+            # NOTE: imho, this is an ugly way to check
+            # if the code is running as a result of
+            # consumer discovering imports. For example,
+            # in Django it leads to duplicate consumer spawning.
+            # TODO: need some cleaner way for it.
+            for line in traceback.format_stack():
+                line = line.strip()
+                if self.discover_consumers.__name__ in line:
+                    self.__skip = True
+                    self.__logger.debug(
+                        "Skip mode set because of consumers discovering."
+                    )
+                    break
 
         assert (
             self.__process_pipeline is not None
@@ -333,7 +348,7 @@ class ECore(IECore):
                             f"{file_path}:{func.__name__}",
                         )
                     )
-                    self.__logger.debug(f"Discovered consumer: {func} in {modname}")
+                    self.__logger.info(f"Discovered consumer: {func} in {modname}")
 
         for func, event, group, clones, func_path in found:
             self.register_consumer(
@@ -344,7 +359,7 @@ class ECore(IECore):
                 func_path=func_path,
             )
 
-        self.__logger.debug(
+        self.__logger.info(
             f"Consumer discovering ended. Found {len(found)} consumer functions."
         )
 
@@ -358,6 +373,8 @@ class ECore(IECore):
         if self.__skip:
             self.__logger.warning("Skipping event producing due to skipping predicate.")
             return
+        if not self.__workers_spawned:
+            self.__logger.warning("There is no spawned consumers at the moment.")
         self.producer.produce(event, block=block, timeout=timeout)
 
     def spawn_workers(self) -> None:
@@ -377,7 +394,7 @@ class ECore(IECore):
         for worker in workers:
             _ = self.spawn_worker(worker)
         self.__workers_spawned = True
-        self.__logger.debug("Workers successfully spawned." + id(self).__str__())
+        self.__logger.info("Workers successfully spawned.")
 
     def __build_workers(self) -> tuple[Worker, ...]:
         if not self.__workers:
@@ -386,7 +403,7 @@ class ECore(IECore):
                 for pipeline in self.__pipelines.values()
             )
             __newline = "\n"
-            self.__logger.debug(
+            self.__logger.info(
                 "Built workers:\n\n"
                 + f"{__newline.join(repr(worker) for worker in self.__workers)}\n"
             )

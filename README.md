@@ -34,7 +34,8 @@ python3 -m pip install -U git+https://github.com/MatveyIvanov/eventscore.git
 Example
 -------
 
-TODO
+Here is an example of running [Marketplace Django App](examples/marketplace)
+![Marketplace](docs/_media/gif/marketplace.gif)
 
 Contributing
 ------------

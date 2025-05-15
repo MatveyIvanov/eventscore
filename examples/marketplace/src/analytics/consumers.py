@@ -1,14 +1,12 @@
 import time
 
-from config.di import Container
+from config.ecore import ecore
 
 from eventscore.core.logging import logger
 from eventscore.core.types import Event
-from eventscore.decorators import consumer
 
 
-@consumer(
-    ecore=Container.ecore(),
+@ecore.consumer(
     event="payment-completed",
     group="payment-completed",
 )

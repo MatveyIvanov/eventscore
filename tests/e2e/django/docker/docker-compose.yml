@@ -12,8 +12,6 @@ services:
         NGINX_VERSION: ${NGINX_VERSION}
     ports:
       - ${NGINX_OUTER_PORT}:${NGINX_INNER_PORT}
-    depends_on:
-      - wsgi
     networks:
       - network
     restart: ${RESTART_POLICY:-unless-stopped}
@@ -48,9 +46,6 @@ services:
       - .env
     volumes:
       - ../src/:/apps/
-    depends_on:
-      redis:
-        condition: service_healthy
     expose:
       - ${WSGI_PORT}
     networks:
